@@ -100,6 +100,7 @@ typedef
 #define VEX_HWCAPS_AMD64_AVX2   (1<<11) /* AVX2 instructions */
 #define VEX_HWCAPS_AMD64_RDRAND (1<<13) /* RDRAND instructions */
 #define VEX_HWCAPS_AMD64_F16C   (1<<14) /* F16C instructions */
+#define VEX_HWCAPS_AMD64_RDSEED (1<<15) /* RDSEED instructions */
 
 /* ppc32: baseline capability is integer only */
 #define VEX_HWCAPS_PPC32_F     (1<<8)  /* basic (non-optional) FP */
@@ -111,6 +112,8 @@ typedef
 #define VEX_HWCAPS_PPC32_DFP   (1<<17) /* Decimal Floating Point (DFP) -- e.g., dadd */
 #define VEX_HWCAPS_PPC32_ISA2_07   (1<<19) /* ISA 2.07 -- e.g., mtvsrd */
 #define VEX_HWCAPS_PPC32_ISA3_0    (1<<21) /* ISA 3.0  -- e.g., cnttzw */
+#define VEX_HWCAPS_PPC32_ISA3_1    (1<<22) /* ISA 3.1  -- e.g., brh */
+/* ISA 3.1 not supported in 32-bit mode */
 
 /* ppc64: baseline capability is integer and basic FP insns */
 #define VEX_HWCAPS_PPC64_V     (1<<13) /* Altivec (VMX) */
@@ -121,6 +124,7 @@ typedef
 #define VEX_HWCAPS_PPC64_DFP   (1<<18) /* Decimal Floating Point (DFP) -- e.g., dadd */
 #define VEX_HWCAPS_PPC64_ISA2_07   (1<<20) /* ISA 2.07 -- e.g., mtvsrd */
 #define VEX_HWCAPS_PPC64_ISA3_0    (1<<22) /* ISA 3.0  -- e.g., cnttzw */
+#define VEX_HWCAPS_PPC64_ISA3_1    (1<<23) /* ISA 3.1  -- e.g., brh */
 
 /* s390x: Hardware capability encoding
 

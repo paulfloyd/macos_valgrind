@@ -40,10 +40,28 @@ To see details of a given bug, visit
 where XXXXXX is the bug number as listed below.
 
 345077  linux syscall execveat support (linux 3.19)
+369029  handle linux syscalls sched_getattr and sched_setattr
 n-i-bz  helgrind: If hg_cli__realloc fails, return NULL.
 
+415293  Incorrect call-graph tracking due to new _dl_runtime_resolve_xsave*
+422174  unhandled instruction bytes: 0x48 0xE9 (REX prefixed JMP instruction)
+422623  epoll_ctl warns for uninitialized padding on non-amd64 64bit arches
 423021  PPC:  Add missing ISA 3.0 documentation link and HWCAPS test.
-
+424298  amd64: Implement RDSEED
+426144  Fix "condition variable has not been initialized" on Fedora 33.
+423195  PPC ISA 3.1 support is missing, part 1
+425232  PPC ISA 3.1 support is missing, part 2
+426123  PPC ISA 3.1 support is missing, part 3
+427787  Support new faccessat2 linux syscall (439)
+428035  drd: Unbreak the musl build
+428648  s390_emit_load_mem panics due to 20-bit offset for vector load
+427400  PPC ISA 3.1 support is missing, part 4
+427401  PPC ISA 3.1 support is missing, part 5
+384729  __libc_freeres inhibits cross-platform valgrind
+427870  lmw, lswi and related PowerPC insns aren't allowed on ppc64le 
+427404  PPC ISA 3.1 support is missing, part 6
+429692  unhandled ppc64le-linux syscall: 147 (getsid)
+428909  helgrind: need to intercept duplicate libc definitions for Fedora 33
 
 Release 3.16.1 (?? June 2020)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

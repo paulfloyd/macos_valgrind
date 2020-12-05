@@ -552,7 +552,7 @@ static IROp mkDIVF ( IRType ty ) {
    switch (ty) {
       case Ity_F32: return Iop_DivF32;
       case Ity_F64: return Iop_DivF64;
-      default: vpanic("mkMULF");
+      default: vpanic("mkDIVF");
    }
 }
 
@@ -568,7 +568,7 @@ static IROp mkABSF ( IRType ty ) {
    switch (ty) {
       case Ity_F32: return Iop_AbsF32;
       case Ity_F64: return Iop_AbsF64;
-      default: vpanic("mkNEGF");
+      default: vpanic("mkABSF");
    }
 }
 
@@ -576,7 +576,7 @@ static IROp mkSQRTF ( IRType ty ) {
    switch (ty) {
       case Ity_F32: return Iop_SqrtF32;
       case Ity_F64: return Iop_SqrtF64;
-      default: vpanic("mkNEGF");
+      default: vpanic("mkSQRTF");
    }
 }
 
@@ -6040,6 +6040,9 @@ Bool dis_ARM64_load_store(/*MB_OUT*/DisResult* dres, UInt insn,
              (tt+0) % 32, arr, (tt+nRegs-1) % 32, arr, nameIReg64orSP(nn),
              pxStr);
 
+         if (nRegs >= 3) {
+            dres->hint = Dis_HintVerbose;
+         }
          return True;
       }
       /* else fall through */

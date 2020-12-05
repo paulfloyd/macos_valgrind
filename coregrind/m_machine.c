@@ -967,7 +967,7 @@ Bool VG_(machine_get_hwcaps)( void )
 #elif defined(VGA_amd64)
    { Bool have_sse3, have_ssse3, have_cx8, have_cx16;
      Bool have_lzcnt, have_avx, have_bmi, have_avx2;
-     Bool have_rdtscp, have_rdrand, have_f16c;
+     Bool have_rdtscp, have_rdrand, have_f16c, have_rdseed;
      UInt eax, ebx, ecx, edx, max_basic, max_extended;
      ULong xgetbv_0 = 0;
      HChar vstr[13];
@@ -975,7 +975,7 @@ Bool VG_(machine_get_hwcaps)( void )
 
      have_sse3 = have_ssse3 = have_cx8 = have_cx16
                = have_lzcnt = have_avx = have_bmi = have_avx2
-               = have_rdtscp = have_rdrand = have_f16c = False;
+               = have_rdtscp = have_rdrand = have_f16c = have_rdseed = False;
 
      eax = ebx = ecx = edx = max_basic = max_extended = 0;
 
@@ -1079,6 +1079,7 @@ Bool VG_(machine_get_hwcaps)( void )
         VG_(cpuid)(7, 0, &eax, &ebx, &ecx, &edx);
         have_bmi  = (ebx & (1<<3)) != 0; /* True => have BMI1 */
         have_avx2 = (ebx & (1<<5)) != 0; /* True => have AVX2 */
+        have_rdseed = (ebx & (1<<18)) != 0; /* True => have RDSEED insns */
      }
 
      /* Sanity check for RDRAND and F16C.  These don't actually *need* AVX, but
@@ -1087,6 +1088,7 @@ Bool VG_(machine_get_hwcaps)( void )
      if (!have_avx) {
         have_f16c   = False;
         have_rdrand = False;
+        have_rdseed = False;
      }
 
      va          = VexArchAMD64;
@@ -1100,7 +1102,8 @@ Bool VG_(machine_get_hwcaps)( void )
                  | (have_avx2   ? VEX_HWCAPS_AMD64_AVX2   : 0)
                  | (have_rdtscp ? VEX_HWCAPS_AMD64_RDTSCP : 0)
                  | (have_f16c   ? VEX_HWCAPS_AMD64_F16C   : 0)
-                 | (have_rdrand ? VEX_HWCAPS_AMD64_RDRAND : 0);
+                 | (have_rdrand ? VEX_HWCAPS_AMD64_RDRAND : 0)
+                 | (have_rdseed ? VEX_HWCAPS_AMD64_RDSEED : 0);
 
      VG_(machine_get_cache_info)(&vai);
 
@@ -1231,6 +1234,8 @@ Bool VG_(machine_get_hwcaps)( void )
         __asm__ __volatile__(".long 0x7d205434"); /* cnttzw RT, RB */
      }
 
+     // ISA 3.1 not supported on 32-bit systems
+
      /* determine dcbz/dcbzl sizes while we still have the signal
       * handlers registered */
      find_ppc_dcbz_sz(&vai);
@@ -1268,6 +1273,7 @@ Bool VG_(machine_get_hwcaps)( void )
      if (have_DFP) vai.hwcaps |= VEX_HWCAPS_PPC32_DFP;
      if (have_isa_2_07) vai.hwcaps |= VEX_HWCAPS_PPC32_ISA2_07;
      if (have_isa_3_0) vai.hwcaps |= VEX_HWCAPS_PPC32_ISA3_0;
+     /* ISA 3.1 not supported on 32-bit systems.  */
 
      VG_(machine_get_cache_info)(&vai);
 
@@ -1284,7 +1290,7 @@ Bool VG_(machine_get_hwcaps)( void )
      vki_sigaction_toK_t     tmp_sigill_act,   tmp_sigfpe_act;
 
      volatile Bool have_F, have_V, have_FX, have_GX, have_VX, have_DFP;
-     volatile Bool have_isa_2_07, have_isa_3_0;
+     volatile Bool have_isa_2_07, have_isa_3_0, have_isa_3_1;
      Int r;
 
      /* This is a kludge.  Really we ought to back-convert saved_act
@@ -1387,6 +1393,14 @@ Bool VG_(machine_get_hwcaps)( void )
         __asm__ __volatile__(".long  0x7d205434"); /* cnttzw RT, RB */
      }
 
+     /* Check for ISA 3.1 support. */
+     have_isa_3_1 = True;
+     if (VG_MINIMAL_SETJMP(env_unsup_insn)) {
+        have_isa_3_1 = False;
+     } else {
+        __asm__ __volatile__(".long 0x7f1401b6"); /* brh  RA, RS */
+     }
+
      /* determine dcbz/dcbzl sizes while we still have the signal
       * handlers registered */
      find_ppc_dcbz_sz(&vai);
@@ -1394,10 +1408,10 @@ Bool VG_(machine_get_hwcaps)( void )
      VG_(sigaction)(VKI_SIGILL, &saved_sigill_act, NULL);
      VG_(sigaction)(VKI_SIGFPE, &saved_sigfpe_act, NULL);
      VG_(sigprocmask)(VKI_SIG_SETMASK, &saved_set, NULL);
-     VG_(debugLog)(1, "machine", "F %d V %d FX %d GX %d VX %d DFP %d ISA2.07 %d ISA3.0 %d\n",
+     VG_(debugLog)(1, "machine", "F %d V %d FX %d GX %d VX %d DFP %d ISA2.07 %d ISA3.0 %d ISA3.1 %d\n",
                     (Int)have_F, (Int)have_V, (Int)have_FX,
                     (Int)have_GX, (Int)have_VX, (Int)have_DFP,
-                    (Int)have_isa_2_07, (int)have_isa_3_0);
+                    (Int)have_isa_2_07, (int)have_isa_3_0, (int)have_isa_3_1);
      /* on ppc64be, if we don't even have FP, just give up. */
      if (!have_F)
         return False;
@@ -1421,6 +1435,7 @@ Bool VG_(machine_get_hwcaps)( void )
      if (have_DFP) vai.hwcaps |= VEX_HWCAPS_PPC64_DFP;
      if (have_isa_2_07) vai.hwcaps |= VEX_HWCAPS_PPC64_ISA2_07;
      if (have_isa_3_0) vai.hwcaps |= VEX_HWCAPS_PPC64_ISA3_0;
+     if (have_isa_3_1) vai.hwcaps |= VEX_HWCAPS_PPC64_ISA3_1;
 
      VG_(machine_get_cache_info)(&vai);
 

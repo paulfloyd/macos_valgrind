@@ -1016,6 +1016,9 @@ static SyscallTableEntry syscall_table[] = {
    LINXY(__NR_process_vm_readv,  sys_process_vm_readv), // 351
    LINX_(__NR_process_vm_writev, sys_process_vm_writev),// 352
 
+   LINX_(__NR_sched_setattr,     sys_sched_setattr),    // 355
+   LINXY(__NR_sched_getattr,     sys_sched_getattr),    // 356
+
    LINXY(__NR_getrandom,         sys_getrandom),        // 359
    LINXY(__NR_memfd_create,      sys_memfd_create),     // 360
 
@@ -1046,6 +1049,8 @@ static SyscallTableEntry syscall_table[] = {
    LINXY(__NR_futex_time64,      sys_futex_time64),     // 422
    LINXY(__NR_sched_rr_get_interval_time64,
          sys_sched_rr_get_interval_time64),             // 423
+
+   LINX_(__NR_faccessat2,        sys_faccessat2),       // 439
 };
 
 SyscallTableEntry* ML_(get_linux_syscall_entry) ( UInt sysno )
