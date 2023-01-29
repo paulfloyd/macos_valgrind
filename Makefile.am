@@ -48,7 +48,8 @@ SUPP_FILES = \
 	freebsd.supp freebsd-helgrind.supp freebsd-drd.supp \
 	darwin10.supp darwin10-drd.supp \
 	darwin11.supp darwin12.supp darwin13.supp darwin14.supp darwin15.supp \
-	darwin16.supp darwin17.supp \
+	darwin16.supp darwin17.supp darwin18.supp darwin19.supp darwin20.supp \
+	darwin21.supp darwin22.supp \
 	bionic.supp \
 	solaris11.supp solaris12.supp \
 	musl.supp

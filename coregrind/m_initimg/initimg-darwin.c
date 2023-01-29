@@ -103,8 +103,13 @@ static void load_client ( /*OUT*/ExeInfo* info,
    Also, remove any binding for VALGRIND_LAUNCHER=.  The client should
    not be able to see this.
 
+   Before macOS 11:
    Also, add DYLD_SHARED_REGION=avoid, because V doesn't know how 
    to process the dyld shared cache file.
+
+   Since macOS 11:
+   Use DYLD_SHARED_REGION=use because system libraries aren't provided outside the cache anymore.
+   This means we need to start processing the dyld shared cache file.
 
    Also, change VYLD_* (mangled by launcher) back to DYLD_*.
 
@@ -116,7 +121,11 @@ static HChar** setup_client_env ( HChar** origenv, const HChar* toolname)
    const HChar* preload_core    = "vgpreload_core";
    const HChar* ld_preload      = "DYLD_INSERT_LIBRARIES=";
    const HChar* dyld_cache      = "DYLD_SHARED_REGION=";
+#if DARWIN_VERS >= DARWIN_11_00
+   const HChar* dyld_cache_value= "use";
+#else
    const HChar* dyld_cache_value= "avoid";
+#endif
    const HChar* v_launcher      = VALGRIND_LAUNCHER "=";
    Int    ld_preload_len  = VG_(strlen)( ld_preload );
    Int    dyld_cache_len  = VG_(strlen)( dyld_cache );
@@ -165,7 +174,11 @@ static HChar** setup_client_env ( HChar** origenv, const HChar* toolname)
 
    /* Allocate a new space */
    ret = VG_(malloc) ("initimg-darwin.sce.3", 
+#if DARWIN_VERS >= DARWIN_10_15
+                      sizeof(HChar *) * (envc+3+1)); /* 3 new entries + NULL */
+#else
                       sizeof(HChar *) * (envc+2+1)); /* 2 new entries + NULL */
+#endif
 
    /* copy it over */
    for (cpp = ret; *origenv; )
@@ -195,7 +208,7 @@ static HChar** setup_client_env ( HChar** origenv, const HChar* toolname)
 
          *cpp = cp;
 
-         ld_preload_done = True;
+         dyld_cache_done = True;
       }
    }
 
@@ -216,6 +229,10 @@ static HChar** setup_client_env ( HChar** origenv, const HChar* toolname)
 
       ret[envc++] = cp;
    }
+#if DARWIN_VERS >= DARWIN_10_15
+   // pthread really wants a non-zero value for ptr_munge
+   ret[envc++] = VG_(strdup)("initimg-darwin.sce.6", "PTHREAD_PTR_MUNGE_TOKEN=0x00000001");
+#endif
    
 
    /* ret[0 .. envc-1] is live now. */

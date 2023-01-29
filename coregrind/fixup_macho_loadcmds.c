@@ -123,7 +123,9 @@
     && DARWIN_VERS != DARWIN_10_7 && DARWIN_VERS != DARWIN_10_8 \
     && DARWIN_VERS != DARWIN_10_9 && DARWIN_VERS != DARWIN_10_10 \
     && DARWIN_VERS != DARWIN_10_11 && DARWIN_VERS != DARWIN_10_12 \
-    && DARWIN_VERS != DARWIN_10_13
+    && DARWIN_VERS != DARWIN_10_13 && DARWIN_VERS != DARWIN_10_14 \
+    && DARWIN_VERS != DARWIN_10_15 && DARWIN_VERS != DARWIN_11_00 \
+    && DARWIN_VERS != DARWIN_12_00 && DARWIN_VERS != DARWIN_13_00
 #  error "Unknown DARWIN_VERS value.  This file only compiles on Darwin."
 #endif
 
@@ -515,8 +517,13 @@ void modify_macho_loadcmds ( HChar* filename,
          fail("has __UNIXSTACK, but wrong ::vmaddr");
       if (seg->vmsize != expected_stack_size)
          fail("has __UNIXSTACK, but wrong ::vmsize");
+#if XCODE_VERS >= XCODE_10_14_6
+      if (seg->maxprot != 3)
+         fail("has __UNIXSTACK, but wrong ::maxprot (should be 3)");
+#else
       if (seg->maxprot != 7)
          fail("has __UNIXSTACK, but wrong ::maxprot (should be 7)");
+#endif
       if (seg->initprot != 3)
          fail("has __UNIXSTACK, but wrong ::initprot (should be 3)");
       if (seg->nsects != 0)

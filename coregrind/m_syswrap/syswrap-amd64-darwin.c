@@ -361,6 +361,9 @@ void pthread_hijack(Addr self, Addr kport, Addr func, Addr func_arg,
    vex->guest_R8  = stacksize;
    vex->guest_R9  = flags;
    vex->guest_RSP = sp;
+#if DARWIN_VERS >= DARWIN_10_12
+   vex->guest_GS_CONST = self + pthread_tsd_offset;
+#endif
 
    // Record thread's stack and Mach port and pthread struct
    tst->os_state.pthread = self;
@@ -481,7 +484,12 @@ void wqthread_hijack(Addr self, Addr kport, Addr stackaddr, Addr workitem,
             || DARWIN_VERS == DARWIN_10_10 \
             || DARWIN_VERS == DARWIN_10_11 \
             || DARWIN_VERS == DARWIN_10_12 \
-            || DARWIN_VERS == DARWIN_10_13
+            || DARWIN_VERS == DARWIN_10_13 \
+            || DARWIN_VERS == DARWIN_10_14 \
+            || DARWIN_VERS == DARWIN_10_15 \
+            || DARWIN_VERS == DARWIN_11_00 \
+            || DARWIN_VERS == DARWIN_12_00 \
+            || DARWIN_VERS == DARWIN_13_00
        UWord magic_delta = 0xE0;
 #      else
 #        error "magic_delta: to be computed on new OS version"

@@ -377,7 +377,7 @@ tls_LDADD		= tls.so tls2.so -lpthread
 tls_so_SOURCES		= tls_so.c
 tls_so_DEPENDENCIES	= tls2.so
 if VGCONF_OS_IS_DARWIN
- tls_so_LDFLAGS		= -dynamic -dynamiclib -all_load -fpic
+ tls_so_LDFLAGS		= -dynamic -dynamiclib -all_load -fpic -undefined dynamic_lookup
  tls_so_LDADD		= `pwd`/tls2.so
 else
  tls_so_LDFLAGS		= -Wl,-rpath,$(abs_top_builddir)/none/tests -shared -fPIC

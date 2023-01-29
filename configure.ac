@@ -139,6 +139,54 @@ else
 fi
 rm $tmpfile
 
+dnl automake-1.10 does not have AM_COND_IF (added in 1.11), so we supply a
+dnl fallback definition
+dnl The macro is courtesy of Dave Hart:
+dnl   https://lists.gnu.org/archive/html/automake/2010-12/msg00045.html
+m4_ifndef([AM_COND_IF], [AC_DEFUN([AM_COND_IF], [
+if test -z "$$1_TRUE"; then :
+  m4_n([$2])[]dnl
+m4_ifval([$3],
+[else
+  $3
+])dnl
+fi[]dnl
+])])
+
+# macOS: Detect the Xcode SDK path and inject it in different tools
+AM_COND_IF([VGCONF_OS_IS_DARWIN],
+[
+  AC_ARG_VAR([DEVELOPER_DIR],[Overrides the active developer directory (used in gcc, xcrun, etc)])
+  AC_CHECK_PROG([XCRUN], [xcrun], [yes], [no])
+
+  AC_MSG_CHECKING([for Xcode SDK and includes])
+  AC_ARG_WITH([xcode-path],
+  [  --with-xcode-path=PATH      Specify path for Xcode SDK],
+  [
+      # Set defaults in case `xcrun` fails
+      xcodedir="$withval"
+      xcodedir_inc="$xcodedir/usr/include"
+      # Defining DEVELOPER_DIR will override which version of gcc, xcrun, etc is being used
+      export DEVELOPER_DIR="$xcodedir"
+  ],
+  [
+      # Use system defaults, in case `xcrun` fails
+      xcodedir="active developer directory"
+      xcodedir_inc="/usr/include"
+  ])
+
+  if test "x$XCRUN" != "xno"; then
+    xcrundir=`xcrun --sdk macosx --show-sdk-path`
+    if test ! -z "$xcrundir"; then
+        xcodedir="$xcrundir"
+        xcodedir_inc="$xcodedir/usr/include"
+    fi
+  else
+    AC_MSG_WARN([Couldn't find xcrun, most Xcode-related autodetection will be disabled and the build might fail])
+  fi
+  AC_MSG_RESULT([$xcodedir (includes: $xcodedir_inc)])
+])
+
 # We don't want gcc < 3.0
 AC_MSG_CHECKING([for a supported version of gcc])
 
@@ -163,12 +211,17 @@ AC_MSG_CHECKING([for a supported version of gcc])
 # ######## Apple LLVM variants ########
 # Apple LLVM version 5.1 (clang-503.0.40) (based on LLVM 3.4svn)
 # Apple LLVM version 6.0 (clang-600.0.51) (based on LLVM 3.5svn)
+# Apple clang version 11.0.0 (clang-1100.0.33.17) (since macOS 10.15)
 #
 [
 if test "x`${CC} --version | $SED -n -e 's/.*\Apple \(LLVM\) version.*clang.*/\1/p'`" = "xLLVM" ;
 then
     is_clang="applellvm"
     gcc_version=`${CC} --version | $SED -n -e 's/.*LLVM version \([0-9.]*\).*$/\1/p'`
+elif test "x`${CC} --version | $SED -n -e 's/.*\Apple \(clang\) version.*clang.*/\1/p'`" = "xclang" ;
+then
+    is_clang="applellvm"
+    gcc_version=`${CC} --version | $SED -n -e 's/.*clang version \([0-9.]*\).*$/\1/p'`
 elif test "x`${CC} --version | $SED -n -e 's/.*\(clang\) version.*/\1/p'`" = "xclang" ;
 then
     is_clang="clang"
@@ -466,6 +519,21 @@ case "${host_os}" in
         AC_DEFINE([DARWIN_10_11], 101100, [DARWIN_VERS value for Mac OS X 10.11])
         AC_DEFINE([DARWIN_10_12], 101200, [DARWIN_VERS value for macOS 10.12])
         AC_DEFINE([DARWIN_10_13], 101300, [DARWIN_VERS value for macOS 10.13])
+        AC_DEFINE([DARWIN_10_14], 101400, [DARWIN_VERS value for macOS 10.14])
+        AC_DEFINE([DARWIN_10_15], 101500, [DARWIN_VERS value for macOS 10.15])
+        AC_DEFINE([DARWIN_11_00], 110000, [DARWIN_VERS value for macOS 11.0])
+        AC_DEFINE([DARWIN_12_00], 120000, [DARWIN_VERS value for macOS 12.0])
+        AC_DEFINE([DARWIN_13_00], 130000, [DARWIN_VERS value for macOS 13.0])
+
+        AC_DEFINE([XCODE_10_XX], 101400, [XCODE_VERS value for Xcode earlier than 10.15])
+        AC_DEFINE([XCODE_10_14_6], 101406, [XCODE_VERS value for Xcode 10.14.6])
+        AC_DEFINE([XCODE_10_15], 101500, [XCODE_VERS value for Xcode 10.15])
+        AC_DEFINE([XCODE_11_0], 110000, [XCODE_VERS value for Xcode 11.0])
+        AC_DEFINE([XCODE_12_0], 120000, [XCODE_VERS value for Xcode 12.0])
+        AC_DEFINE([XCODE_13_0], 130000, [XCODE_VERS value for Xcode 13.0])
+
+        # Substitute the Xcode include path detected earlier
+        AC_SUBST(XCODE_INC_DIR, [$xcodedir_inc])
 
 	AC_MSG_CHECKING([for the kernel version])
 	kernel=`uname -r`
@@ -541,11 +609,73 @@ case "${host_os}" in
 		  DEFAULT_SUPP="$srcdir/darwin17.supp ${DEFAULT_SUPP}"
 		  DEFAULT_SUPP="$srcdir/darwin10-drd.supp ${DEFAULT_SUPP}"
 		  ;;
-             *) 
+             18.*)
+                  AC_MSG_RESULT([Darwin 18.x (${kernel}) / macOS 10.14 Mojave])
+                  AC_DEFINE([DARWIN_VERS], DARWIN_10_14, [Darwin / Mac OS X version])
+                  DEFAULT_SUPP="darwin18.supp ${DEFAULT_SUPP}"
+                  DEFAULT_SUPP="darwin10-drd.supp ${DEFAULT_SUPP}"
+      ;;
+       19.*)
+      AC_MSG_RESULT([Darwin 19.x (${kernel}) / macOS 10.15 Catalina])
+      AC_DEFINE([DARWIN_VERS], DARWIN_10_15, [Darwin / Mac OS X version])
+      DEFAULT_SUPP="darwin19.supp ${DEFAULT_SUPP}"
+      DEFAULT_SUPP="darwin10-drd.supp ${DEFAULT_SUPP}"
+                  ;;
+       20.*)
+      AC_MSG_RESULT([Darwin 20.x (${kernel}) / macOS 11 Big Sur])
+      AC_DEFINE([DARWIN_VERS], DARWIN_11_00, [Darwin / Mac OS X version])
+      DEFAULT_SUPP="darwin20.supp ${DEFAULT_SUPP}"
+      DEFAULT_SUPP="darwin10-drd.supp ${DEFAULT_SUPP}"
+                  ;;
+       21.*)
+      AC_MSG_RESULT([Darwin 21.x (${kernel}) / macOS 12 Monterey])
+      AC_DEFINE([DARWIN_VERS], DARWIN_12_00, [Darwin / Mac OS X version])
+      DEFAULT_SUPP="darwin21.supp ${DEFAULT_SUPP}"
+      DEFAULT_SUPP="darwin10-drd.supp ${DEFAULT_SUPP}"
+                  ;;
+       22.*)
+      AC_MSG_RESULT([Darwin 22.x (${kernel}) / macOS 13 Ventura])
+      AC_DEFINE([DARWIN_VERS], DARWIN_13_00, [Darwin / Mac OS X version])
+      DEFAULT_SUPP="darwin22.supp ${DEFAULT_SUPP}"
+      DEFAULT_SUPP="darwin10-drd.supp ${DEFAULT_SUPP}"
+                  ;;
+             *)
 		  AC_MSG_RESULT([unsupported (${kernel})])
-		  AC_MSG_ERROR([Valgrind works on Darwin 10.x, 11.x, 12.x, 13.x, 14.x, 15.x, 16.x and 17.x (Mac OS X 10.6/7/8/9/10/11 and macOS 10.12/13)])
+		  AC_MSG_ERROR([Valgrind works on Darwin 10.x-22.x (Mac OS X 10.6-10.11 and macOS 10.12-13.0)])
 		  ;;
 	esac
+
+        AC_MSG_CHECKING([for the Xcode SDK version])
+        xcodeversion="legacy"
+        if test "x$XCRUN" != "xno"; then
+          xcodeversion=`xcrun --sdk macosx --show-sdk-version`
+        fi
+        case "${xcodeversion}" in
+	        10.14.6)
+            AC_DEFINE([XCODE_VERS], XCODE_10_14_6, [Xcode version])
+            ;;
+	        legacy|10.5*|10.6*|10.7*|10.8*|10.9*|10.10*|10.11*|10.12*|10.13*|10.14*)
+            AC_DEFINE([XCODE_VERS], XCODE_10_XX, [Xcode version])
+            ;;
+	        10.15*)
+            AC_DEFINE([XCODE_VERS], XCODE_10_15, [Xcode version])
+            ;;
+	        11.*)
+            AC_DEFINE([XCODE_VERS], XCODE_11_0, [Xcode version])
+            ;;
+	        12.*)
+            AC_DEFINE([XCODE_VERS], XCODE_12_0, [Xcode version])
+            ;;
+	        13.*)
+            AC_DEFINE([XCODE_VERS], XCODE_13_0, [Xcode version])
+            ;;
+	        *)
+            AC_MSG_RESULT([unsupported (${xcodeversion})])
+            AC_MSG_ERROR([Valgrind works on Darwin 10.x-22.x (Mac OS X 10.6-11 and macOS 10.12-13.0)])
+            ;;
+	      esac
+        AC_MSG_RESULT([${xcodeversion}])
+
         ;;
 
      solaris2.11*)
@@ -608,6 +738,15 @@ case "$ARCH_MAX-$VGCONF_OS" in
         AC_MSG_RESULT([no])
         ])
         CFLAGS=$safe_CFLAGS;;
+     x86-darwin|amd64-darwin)
+        AC_MSG_CHECKING([for 32 bit build support])
+        macos_only_32bit="no"
+        if test x$xcodeversion = x10.14.6 -o $XCODE_VERS -ge $XCODE_10_15 ; then
+            vg_cv_only64bit="yes"
+            AC_MSG_RESULT([no])
+        else
+            AC_MSG_RESULT([yes])
+        fi
 esac
 
 if test x$vg_cv_only64bit = xyes -a x$vg_cv_only32bit = xyes; then
@@ -1110,20 +1249,6 @@ AM_CONDITIONAL(VGCONF_OS_IS_DARWIN_OR_FREEBSD,
 AM_CONDITIONAL(VGCONF_HAVE_PLATFORM_SEC,
                test x$VGCONF_PLATFORM_SEC_CAPS != x)
 
-dnl automake-1.10 does not have AM_COND_IF (added in 1.11), so we supply a
-dnl fallback definition
-dnl The macro is courtesy of Dave Hart:
-dnl   https://lists.gnu.org/archive/html/automake/2010-12/msg00045.html
-m4_ifndef([AM_COND_IF], [AC_DEFUN([AM_COND_IF], [
-if test -z "$$1_TRUE"; then :
-  m4_n([$2])[]dnl
-m4_ifval([$3],
-[else
-  $3
-])dnl
-fi[]dnl
-])])
-
 #----------------------------------------------------------------------------
 # Inner Valgrind?
 #----------------------------------------------------------------------------
@@ -1166,31 +1291,6 @@ AC_ARG_WITH(tmpdir,
    tmpdir="/tmp")
 AC_DEFINE_UNQUOTED(VG_TMPDIR, "$tmpdir", [Temporary files directory])
 AC_SUBST(VG_TMPDIR, [$tmpdir])
-
-#----------------------------------------------------------------------------
-# Detect xcode path
-#----------------------------------------------------------------------------
-AM_COND_IF([VGCONF_OS_IS_DARWIN],
-[AC_CHECK_PROG([XCRUN], [xcrun], [yes], [no])
-AC_MSG_CHECKING([for xcode sdk include path])
-AC_ARG_WITH(xcodedir,
-   [  --with-xcode-path=PATH      Specify path for xcode sdk includes],
-   [xcodedir="$withval"],
-   [
-      if test "x$XCRUN" != "xno" -a ! -d /usr/include; then
-         xcrundir=`xcrun --sdk macosx --show-sdk-path`
-         if test -z "$xcrundir"; then
-            xcodedir="/usr/include"
-         else
-            xcodedir="$xcrundir/usr/include"
-         fi
-      else
-         xcodedir="/usr/include"
-      fi
-   ])
-AC_MSG_RESULT([$xcodedir])
-AC_DEFINE_UNQUOTED(XCODE_DIR, "$xcodedir", [xcode sdk include directory])
-AC_SUBST(XCODE_DIR, [$xcodedir])])
 
 #----------------------------------------------------------------------------
 # Libc and suppressions
@@ -4769,6 +4869,8 @@ AC_CHECK_TYPE([struct statx], [
 #----------------------------------------------------------------------------
 # Checks for library functions.
 #----------------------------------------------------------------------------
+save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -Wno-error"
 AC_FUNC_MEMCMP
 AC_FUNC_MMAP
 
@@ -4822,6 +4924,7 @@ AC_CHECK_FUNCS([     \
         memrchr      \
         strndup      \
         ])
+CFLAGS="$save_CFLAGS"
 
 # AC_CHECK_LIB adds any library found to the variable LIBS, and links these
 # libraries with any shared object and/or executable. This is NOT what we
@@ -5084,7 +5187,7 @@ AM_CONDITIONAL([HAVE_OPENMP], [test x$ac_have_openmp = xyes])
 AC_MSG_CHECKING([for __builtin_popcount()])
 AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 ]], [[
-  __builtin_popcount(2);
+  (void)__builtin_popcount(2);
   return 0;
 ]])], [
 AC_MSG_RESULT([yes])
@@ -5098,7 +5201,7 @@ AC_MSG_RESULT([no])
 AC_MSG_CHECKING([for __builtin_clz()])
 AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 ]], [[
-  __builtin_clz(2);
+  (void)__builtin_clz(2);
   return 0;
 ]])], [
 AC_MSG_RESULT([yes])
@@ -5112,7 +5215,7 @@ AC_MSG_RESULT([no])
 AC_MSG_CHECKING([for __builtin_ctz()])
 AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 ]], [[
-  __builtin_ctz(2);
+  (void)__builtin_ctz(2);
   return 0;
 ]])], [
 AC_MSG_RESULT([yes])
