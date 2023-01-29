@@ -71,6 +71,7 @@ $SED "s/[0-9][0-9]* bytes below stack pointer/.... bytes below stack pointer/" |
 
 # Suppress warnings from incompatible debug info
 $SED '/warning: the debug information found in "[^"]*" does not match/d' |
+$SED '/warning: no debug symbols in executable/d' | # macOS
 
 # Suppress warnings from Dwarf reader
 $SED '/warning: evaluate_Dwarf3_Expr: unhandled DW_OP_/d' |
