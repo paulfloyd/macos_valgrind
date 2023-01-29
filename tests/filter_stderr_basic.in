@@ -76,5 +76,8 @@ $SED '/warning: no debug symbols in executable/d' | # macOS
 # Suppress warnings from Dwarf reader
 $SED '/warning: evaluate_Dwarf3_Expr: unhandled DW_OP_/d' |
 
+# macOS address range warnings
+$SED '/Warning: set address range perms: large range/d' |
+
 # Remove macOS dsymutil
 $SED '/^run: \/usr\/bin\/dsymutil.*/d'
