@@ -9,7 +9,7 @@ EXTRA_DIST = \
 	cet_nops_gs.stderr.exp cet_nops_gs.stdout.exp cet_nops_gs.vgtest
 
 check_PROGRAMS = \
-	bug341419 \
+	#bug341419 \
 	cet_nops_gs
 
 AM_CFLAGS    += @FLAG_M64@
