@@ -11,8 +11,9 @@
 
 int main(int argc, char *argv[], char *envp[], char *apple[])
 {
-   char *pargv = calloc((PATH_MAX+1), sizeof(char)),
-        *pappl = calloc((PATH_MAX+1), sizeof(char));
+   char *pargv = calloc((PATH_MAX+1), sizeof(char));
+   char *pappl = calloc((PATH_MAX+1), sizeof(char));
+   char *real_apple = apple[0];
    int i;
 
    for (i = 0; envp[i]; i++)
@@ -21,11 +22,19 @@ int main(int argc, char *argv[], char *envp[], char *apple[])
    // envp[i]==NULL; envp[i+1]==apple[0]==executable_path
    assert(envp[i+1] == apple[0]);
 
+   if (strncmp(real_apple, "executable_path=", 16) == 0)
+   {
+       real_apple += 16;
+   }
+
    // Make sure realpath(argv[0]) == realpath(apple[0]).  (realpath resolves
    // symlinks.)
    realpath(argv[0], pargv);
-   realpath(apple[0], pappl);
+   realpath(real_apple, pappl);
    assert(0 == strcmp(pargv, pappl));
+
+   free(pargv);
+   free(pappl);
 
    return 0;
 }

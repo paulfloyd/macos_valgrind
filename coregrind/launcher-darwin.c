@@ -240,6 +240,7 @@ int main(int argc, char** argv, char** envp)
          loglevel++;
       if (0 == strncmp(argv[i], "--tool=", 7)) 
          toolname = argv[i] + 7;
+      // @todo PJF --arch is not documented
       if (0 == strncmp(argv[i], "--arch=", 7))
          archname = argv[i] + 7;
    }

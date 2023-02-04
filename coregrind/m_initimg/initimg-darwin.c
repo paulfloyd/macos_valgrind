@@ -341,6 +341,8 @@ Addr setup_client_stack( void*  init_sp,
    Addr client_SP;	        /* client stack base (initial SP) */
    Addr clstack_start;
    Int i;
+   const HChar *executable_path = "executable_path=";
+   const SizeT executable_path_length = VG_(strlen)(executable_path);
 
    vg_assert(VG_IS_PAGE_ALIGNED(clstack_end+1));
    vg_assert( VG_(args_for_client) );
@@ -384,6 +386,9 @@ Addr setup_client_stack( void*  init_sp,
    auxsize += 2 * sizeof(Word);
    if (info->executable_path) {
        stringsize += 1 + VG_(strlen)(info->executable_path);
+#if (XCODE_VERS >= XCODE_10_14_6)
+       stringsize += executable_path_length;
+#endif
    }
 
    /* Darwin mach_header */
@@ -465,10 +470,19 @@ Addr setup_client_stack( void*  init_sp,
    *ptr++ = 0;
 
    /* --- executable_path + NULL --- */
-   if (info->executable_path) 
+   if (info->executable_path) {
+#if (XCODE_VERS < XCPDE_10_14_6)
        *ptr++ = (Addr)copy_str(&strtab, info->executable_path);
-   else 
+#else
+       HChar tmp[PATH_MAX+executable_path_length+1];
+       tmp[0] = '\0';
+       VG_(strcat)(tmp, executable_path);
+       VG_(strcat)(tmp, info->executable_path);
+       *ptr++ = (Addr)copy_str(&strtab, tmp);
+#endif
+   } else {
        *ptr++ = 0;
+   }
    *ptr++ = 0;
 
    vg_assert((strtab-stringbase) == stringsize);
