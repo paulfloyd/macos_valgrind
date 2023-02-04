@@ -614,30 +614,30 @@ case "${host_os}" in
                   AC_DEFINE([DARWIN_VERS], DARWIN_10_14, [Darwin / Mac OS X version])
                   DEFAULT_SUPP="darwin18.supp ${DEFAULT_SUPP}"
                   DEFAULT_SUPP="darwin10-drd.supp ${DEFAULT_SUPP}"
-      ;;
-       19.*)
-      AC_MSG_RESULT([Darwin 19.x (${kernel}) / macOS 10.15 Catalina])
-      AC_DEFINE([DARWIN_VERS], DARWIN_10_15, [Darwin / Mac OS X version])
-      DEFAULT_SUPP="darwin19.supp ${DEFAULT_SUPP}"
-      DEFAULT_SUPP="darwin10-drd.supp ${DEFAULT_SUPP}"
                   ;;
-       20.*)
-      AC_MSG_RESULT([Darwin 20.x (${kernel}) / macOS 11 Big Sur])
-      AC_DEFINE([DARWIN_VERS], DARWIN_11_00, [Darwin / Mac OS X version])
-      DEFAULT_SUPP="darwin20.supp ${DEFAULT_SUPP}"
-      DEFAULT_SUPP="darwin10-drd.supp ${DEFAULT_SUPP}"
+             19.*)
+                  AC_MSG_RESULT([Darwin 19.x (${kernel}) / macOS 10.15 Catalina])
+                  AC_DEFINE([DARWIN_VERS], DARWIN_10_15, [Darwin / Mac OS X version])
+                  DEFAULT_SUPP="darwin19.supp ${DEFAULT_SUPP}"
+                  DEFAULT_SUPP="darwin10-drd.supp ${DEFAULT_SUPP}"
                   ;;
-       21.*)
-      AC_MSG_RESULT([Darwin 21.x (${kernel}) / macOS 12 Monterey])
-      AC_DEFINE([DARWIN_VERS], DARWIN_12_00, [Darwin / Mac OS X version])
-      DEFAULT_SUPP="darwin21.supp ${DEFAULT_SUPP}"
-      DEFAULT_SUPP="darwin10-drd.supp ${DEFAULT_SUPP}"
+             20.*)
+                  AC_MSG_RESULT([Darwin 20.x (${kernel}) / macOS 11 Big Sur])
+                  AC_DEFINE([DARWIN_VERS], DARWIN_11_00, [Darwin / Mac OS X version])
+                  DEFAULT_SUPP="darwin20.supp ${DEFAULT_SUPP}"
+                  DEFAULT_SUPP="darwin10-drd.supp ${DEFAULT_SUPP}"
                   ;;
-       22.*)
-      AC_MSG_RESULT([Darwin 22.x (${kernel}) / macOS 13 Ventura])
-      AC_DEFINE([DARWIN_VERS], DARWIN_13_00, [Darwin / Mac OS X version])
-      DEFAULT_SUPP="darwin22.supp ${DEFAULT_SUPP}"
-      DEFAULT_SUPP="darwin10-drd.supp ${DEFAULT_SUPP}"
+             21.*)
+                  AC_MSG_RESULT([Darwin 21.x (${kernel}) / macOS 12 Monterey])
+                  AC_DEFINE([DARWIN_VERS], DARWIN_12_00, [Darwin / Mac OS X version])
+                  DEFAULT_SUPP="darwin21.supp ${DEFAULT_SUPP}"
+                  DEFAULT_SUPP="darwin10-drd.supp ${DEFAULT_SUPP}"
+                  ;;
+             22.*)
+                  AC_MSG_RESULT([Darwin 22.x (${kernel}) / macOS 13 Ventura])
+                  AC_DEFINE([DARWIN_VERS], DARWIN_13_00, [Darwin / Mac OS X version])
+                  DEFAULT_SUPP="darwin22.supp ${DEFAULT_SUPP}"
+                  DEFAULT_SUPP="darwin10-drd.supp ${DEFAULT_SUPP}"
                   ;;
              *)
 		  AC_MSG_RESULT([unsupported (${kernel})])
