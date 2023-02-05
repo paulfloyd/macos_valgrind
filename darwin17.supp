@@ -784,4 +784,11 @@ fun:pthread_rwlock_init
    fun:map_images_nolock
    fun:map_images
 }
+{
+   OSX1013:map_images-3
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:calloc
+   fun:_ZL12realizeClassP10objc_class
+}
 
