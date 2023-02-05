@@ -16,7 +16,7 @@
 {
    OSX1013:2-Leak
    Memcheck:Leak
-   match-leak-kinds: definite
+   match-leak-kinds: all
    fun:malloc_zone_?alloc
    ...
    fun:_read_images
@@ -771,8 +771,8 @@ fun:pthread_rwlock_init
 {
    OSX1013:map_images-1
    Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc_zone_malloc
+   match-leak-kinds: all
+   fun:*alloc
    fun:NXCreate*TableFromZone
 }
 
@@ -791,4 +791,18 @@ fun:pthread_rwlock_init
    fun:calloc
    fun:_ZL12realizeClassP10objc_class
 }
-
+{
+   OSX1013:map_images-4
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc_zone_malloc
+   ...
+   fun:map_images_nolock
+}
+{
+   OSX1013:map_images-5
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc_zone_calloc
+   fun:*NXHash*
+}
