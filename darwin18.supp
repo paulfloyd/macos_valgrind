@@ -84,3 +84,58 @@
    fun:*CFGetCachedUnsandboxedHomeDirectoryForUser_block_invoke*
    ...
 }
+# same as OSX1013
+{
+   OSX1014:19-Leak
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc_zone_?alloc
+   ...
+   fun:*NX*Map*
+   fun:*NX*Map*
+}
+{
+   OSX1014:map_images-1
+   Memcheck:Leak
+   match-leak-kinds: all
+   fun:calloc
+   fun:*realizeClass*
+   ...
+   fun:map_images
+}
+{
+   OSX1014:map_images-2
+   Memcheck:Leak
+   match-leak-kinds: all
+   fun:malloc_zone_?alloc
+   ...
+   fun:NXCreate*Table*
+}
+
+# OSX1014 specific
+{
+   OSX1014:map_images-4
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:arc4_init
+   fun:arc4random_buf
+   fun:_read_images
+   fun:map_images_nolock
+   fun:map_images
+}
+{
+   OSX1014:map_images-5
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:NXCreate*TableFromZone
+}
+{
+   OSX1014:system-init-1
+   Memcheck:Leak
+   match-leak-kinds: all
+   fun:?alloc
+   ...
+   fun:libSystem_initializer
+}
