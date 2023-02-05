@@ -766,3 +766,22 @@ macos-__pthread_rwlock_init-see-our-bug-196528
 Memcheck:Cond
 fun:pthread_rwlock_init
 }
+
+# macOS 10.13 mach-o loader at startup
+{
+   OSX1013:map_images-1
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc_zone_malloc
+   fun:NXCreate*TableFromZone
+}
+
+{
+   OSX1013:map_images-2
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   fun:map_images_nolock
+   fun:map_images
+}
+
