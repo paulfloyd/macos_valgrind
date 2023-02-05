@@ -341,8 +341,10 @@ Addr setup_client_stack( void*  init_sp,
    Addr client_SP;	        /* client stack base (initial SP) */
    Addr clstack_start;
    Int i;
+#if (XCODE_VERS >= XCODE_10_14_6)
    const HChar *executable_path = "executable_path=";
    const SizeT executable_path_length = VG_(strlen)(executable_path);
+#endif
 
    vg_assert(VG_IS_PAGE_ALIGNED(clstack_end+1));
    vg_assert( VG_(args_for_client) );
@@ -471,7 +473,7 @@ Addr setup_client_stack( void*  init_sp,
 
    /* --- executable_path + NULL --- */
    if (info->executable_path) {
-#if (XCODE_VERS < XCPDE_10_14_6)
+#if (XCODE_VERS < XCODE_10_14_6)
        *ptr++ = (Addr)copy_str(&strtab, info->executable_path);
 #else
        HChar tmp[PATH_MAX+executable_path_length+1];
