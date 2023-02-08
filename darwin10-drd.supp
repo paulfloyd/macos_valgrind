@@ -187,3 +187,33 @@
    ...
    fun:pthread_join
 }
+{
+   DRD PTHREAD KEY CREATE
+   drd:ConflictingAccess
+   fun:pthread_key_create
+}
+{
+   DRD SPIN LOCK
+   drd:ConflictingAccess
+}
+{
+   DRD RESTORE SEM
+   drd:ConflictingAccess
+   fun:restore_sem_to_pool
+}
+{
+   DRD OS CAS
+   drd:ConflictingAccess
+   fun:OSAtomicCompareAndSwap64$VARIANT$mp
+}
+{
+   DRD PTHREAD SETSPECIFIC
+   drd:ConflictingAccess
+   fun:pthread_setspecific
+}
+{
+   DRD PTHREAD START
+   drd:ConflictingAccess
+   ...
+   fun:_pthread_start
+}
