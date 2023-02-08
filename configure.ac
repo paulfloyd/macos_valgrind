@@ -176,7 +176,7 @@ AM_COND_IF([VGCONF_OS_IS_DARWIN],
   ])
 
   if test "x$XCRUN" != "xno"; then
-    xcrundir=`xcrun --sdk macosx --show-sdk-path`
+    xcrundir=`xcrun --sdk macosx --show-sdk-path 2>/dev/null`
     if test ! -z "$xcrundir"; then
         xcodedir="$xcrundir"
         xcodedir_inc="$xcodedir/usr/include"
