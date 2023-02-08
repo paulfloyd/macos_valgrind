@@ -160,3 +160,24 @@
    drd:ConflictingAccess
    fun:_pthread_testcancel
 }
+
+# @todo PJF Darwin suppressions are a total mess
+# this is the last one and it's about 12 versions out of date
+# the following are for OS X 10.7 / Darwin 11.4.2
+{
+   DRD PTHREAD MUTEX UNLOCK
+   drd:ConflictingAccess
+   fun:pthread_mutex_unlock
+}
+{
+   DRD CXA FINALIZE
+   drd:ConflictingAccess
+   ...
+   fun:__cxa_finalize
+}
+{
+   DRD PTHREAD MUTEX LOCK
+   drd:ConflictingAccess
+   fun:pthread_mutex_lock
+}
+
