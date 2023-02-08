@@ -194,8 +194,8 @@
 }
 {
    DRD SPIN LOCK
-   fun:spin_lock$VARIANT$mp
    drd:ConflictingAccess
+   fun:spin_lock$VARIANT$mp
 }
 {
    DRD RESTORE SEM
