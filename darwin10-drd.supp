@@ -167,6 +167,7 @@
 {
    DRD PTHREAD MUTEX UNLOCK
    drd:ConflictingAccess
+   ...
    fun:pthread_mutex_unlock
 }
 {
@@ -180,4 +181,9 @@
    drd:ConflictingAccess
    fun:pthread_mutex_lock
 }
-
+{
+   DRD PTHREAD JOIN
+   drd:ConflictingAccess
+   ...
+   fun:pthread_join
+}
