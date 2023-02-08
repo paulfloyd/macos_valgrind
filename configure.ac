@@ -648,13 +648,13 @@ case "${host_os}" in
         AC_MSG_CHECKING([for the Xcode SDK version])
         xcodeversion="legacy"
         if test "x$XCRUN" != "xno"; then
-          xcodeversion=`xcrun --sdk macosx --show-sdk-version`
+          xcodeversion=`xcodebuild -version 2>/dev/null | head -1 | awk '{print $2}'`
         fi
         case "${xcodeversion}" in
 	        10.14.6)
             AC_DEFINE([XCODE_VERS], XCODE_10_14_6, [Xcode version])
             ;;
-	        legacy|10.5*|10.6*|10.7*|10.8*|10.9*|10.10*|10.11*|10.12*|10.13*|10.14*)
+	        4*|legacy|10.5*|10.6*|10.7*|10.8*|10.9*|10.10*|10.11*|10.12*|10.13*|10.14*)
             AC_DEFINE([XCODE_VERS], XCODE_10_XX, [Xcode version])
             ;;
 	        10.15*)
