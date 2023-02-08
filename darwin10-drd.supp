@@ -194,6 +194,7 @@
 }
 {
    DRD SPIN LOCK
+   fun:spin_lock$VARIANT$mp
    drd:ConflictingAccess
 }
 {
