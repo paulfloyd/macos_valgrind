@@ -646,9 +646,12 @@ case "${host_os}" in
 	esac
 
         AC_MSG_CHECKING([for the Xcode SDK version])
+        # @todo PJF doen't work on my old macbook
+        # xcrun doesn't support those options
+        # need to add some autocuft macro stuff
         xcodeversion="legacy"
         if test "x$XCRUN" != "xno"; then
-          xcodeversion=`xcrun --sdk macosx --show-sdk-version`
+          xcodeversion=`xcrun --sdk macosx --show-sdk-version 2>/dev/null`
         fi
         case "${xcodeversion}" in
 	        10.14.6)
