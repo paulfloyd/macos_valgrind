@@ -218,3 +218,10 @@
    ...
    fun:_pthread_start
 }
+# some suppressions gnerated on Darwin 17.7.0
+{
+   DRD PTHREAD JOIN
+   drd:ConflictingAccess
+   ...
+   fun:_pthread_join*
+}
