@@ -225,3 +225,62 @@
    ...
    fun:_pthread_join*
 }
+{
+   DRD PTHREAD CANCEL
+   drd:ConflictingAccess
+   fun:pthread_cancel
+}
+{
+   DRD PTHREAD COND DESTROY
+   drd:ConflictingAccess
+   fun:pthread_cond_destroy
+}
+{
+   DRD PTHREAD MUTEX DESTROY
+   drd:ConflictingAccess
+   fun:pthread_mutex_destroy
+}
+{
+   DRD OS UNFAIR LOCK
+   drd:ConflictingAccess
+   fun:os_unfair_lock_lock_with_options
+}
+{
+   DRD PTHREAD COND BROADCAST
+   drd:ConflictingAccess
+   ...
+   fun:pthread_cond_broadcast
+}
+# @todo PJF does this also potentially impact atexit?
+{
+   DRD EXIT
+   drd:ConflictingAccess
+   ...
+   fun:exit
+}
+{
+   DRD STD ASSOC SUB STATE DTOR
+   drd:ConflictingAccess
+   fun:_ZNSt3__117__assoc_sub_state*
+}
+{
+   DRD PTHREAD DETACH
+   drd:ConflictingAccess
+   fun:pthread_detach
+}
+{
+IGNAL
+   drd:ConflictingAccess
+   ...
+   fun:pthread_cond_signal
+}
+{
+   DRD PTHREAD COND WAIT
+   drd:ConflictingAccess
+   fun:pthread_cond_wait
+}
+{
+   DRD STD SHARD MUTEX UNLOCK
+   drd:ConflictingAccess
+   fun:_ZNSt3__119__shared_mutex_base13unlock_sharedEv
+}
