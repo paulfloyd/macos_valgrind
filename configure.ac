@@ -646,37 +646,40 @@ case "${host_os}" in
 	esac
 
         AC_MSG_CHECKING([for the Xcode SDK version])
-        # @todo PJF doen't work on my old macbook
-        # xcrun doesn't support those options
-        # need to add some autocuft macro stuff
-        xcodeversion="legacy"
+
         if test "x$XCRUN" != "xno"; then
           xcodeversion=`xcrun --sdk macosx --show-sdk-version 2>/dev/null`
-        fi
-        case "${xcodeversion}" in
-	        10.14.6)
-            AC_DEFINE([XCODE_VERS], XCODE_10_14_6, [Xcode version])
-            ;;
-	        legacy|10.5*|10.6*|10.7*|10.8*|10.9*|10.10*|10.11*|10.12*|10.13*|10.14*)
+          if test ! -z "xcodeversion"; then
+            case "${xcodeversion}" in
+              10.14.6)
+              AC_DEFINE([XCODE_VERS], XCODE_10_14_6, [Xcode version])
+              ;;
+            10.5*|10.6*|10.7*|10.8*|10.9*|10.10*|10.11*|10.12*|10.13*|10.14*)
+              AC_DEFINE([XCODE_VERS], XCODE_10_XX, [Xcode version])
+              ;;
+            10.15*)
+              AC_DEFINE([XCODE_VERS], XCODE_10_15, [Xcode version])
+              ;;
+            11.*)
+              AC_DEFINE([XCODE_VERS], XCODE_11_0, [Xcode version])
+              ;;
+            12.*)
+              AC_DEFINE([XCODE_VERS], XCODE_12_0, [Xcode version])
+              ;;
+            13.*)
+              AC_DEFINE([XCODE_VERS], XCODE_13_0, [Xcode version])
+              ;;
+            *)
+              AC_MSG_RESULT([unsupported (${xcodeversion})])
+              AC_MSG_ERROR([Valgrind works on Darwin 10.x-22.x (Mac OS X 10.6-11 and macOS 10.12-13.0)])
+              ;;
+            esac
+          else
+            # 'legacy' xcrun without --show-sdk-version
             AC_DEFINE([XCODE_VERS], XCODE_10_XX, [Xcode version])
-            ;;
-	        10.15*)
-            AC_DEFINE([XCODE_VERS], XCODE_10_15, [Xcode version])
-            ;;
-	        11.*)
-            AC_DEFINE([XCODE_VERS], XCODE_11_0, [Xcode version])
-            ;;
-	        12.*)
-            AC_DEFINE([XCODE_VERS], XCODE_12_0, [Xcode version])
-            ;;
-	        13.*)
-            AC_DEFINE([XCODE_VERS], XCODE_13_0, [Xcode version])
-            ;;
-	        *)
-            AC_MSG_RESULT([unsupported (${xcodeversion})])
-            AC_MSG_ERROR([Valgrind works on Darwin 10.x-22.x (Mac OS X 10.6-11 and macOS 10.12-13.0)])
-            ;;
-	      esac
+          fi
+        fi
+
         AC_MSG_RESULT([${xcodeversion}])
 
         ;;
