@@ -280,7 +280,32 @@ IGNAL
    fun:pthread_cond_wait
 }
 {
-   DRD STD SHARD MUTEX UNLOCK
+   DRD STD SHARED MUTEX UNLOCK
    drd:ConflictingAccess
    fun:_ZNSt3__119__shared_mutex_base13unlock_sharedEv
+}
+{
+   DRD PLATFORM MEMMOVE
+   drd:ConflictingAccess
+   fun:_platform_memmove$VARIANT$*
+}
+{
+   DRD SFVWRITE
+   drd:ConflictingAccess
+   fun:__sfvwrite
+}
+{
+   DRD PTHREAD MUTEX *LOCK SLOW
+   drd:ConflictingAccess
+   fun:_pthread_mutex_*lock_slow
+}
+{
+   DRD XVPRINTF
+   drd:ConflictingAccess
+   fun:__xvprintf
+}
+{
+   DRD V2PRINTF
+   drd:ConflictingAccess
+   fun:__v2printf
 }
