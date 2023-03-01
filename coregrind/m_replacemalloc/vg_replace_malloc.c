@@ -1819,8 +1819,8 @@ extern int *___errno (void) __attribute__((weak));
       if (pszB == 0) \
          pszB = my_getpagesize(); \
       TRIGGER_MEMCHECK_ERROR_IF_UNDEFINED((UWord) zone);	      \
-      return VG_REPLACE_FUNCTION_EZU(10110,VG_Z_LIBC_SONAME,memalign) \
-                ((SizeT)pszB, size); \
+      return (void*)VALGRIND_NON_SIMD_CALL2( info.tl_memalign, \
+         pszB, size ); \
    }
 
 #if defined(VGO_linux)
@@ -1945,7 +1945,7 @@ extern int *___errno (void) __attribute__((weak));
       } \
       if (VG_POSIX_MEMALIGN_SIZE_0_RETURN_NULL && \
           size == 0U) { \
-         /* no allocation for zro size on Solaris/Illumos */ \
+         /* no allocation for zero size on Solaris/Illumos */ \
          *memptr = NULL; \
          return 0; \
       } \
