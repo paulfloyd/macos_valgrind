@@ -139,6 +139,13 @@ EXTRA_DIST = \
 	cxx17_aligned_new.stderr.exp cxx17_aligned_new.vgtest \
 		cxx17_aligned_new.stderr.exp_32 \
 		cxx17_aligned_new.stdout.exp \
+	sized_aligned_new_delete_args.stderr.exp \
+		sized_aligned_new_delete_args.vgtest \
+		sized_aligned_new_delete_args.stderr.exp_32 \
+		sized_aligned_new_delete_args.stderr.exp-gcc \
+		sized_aligned_new_delete_args.stderr.exp-s390 \
+	sized_aligned_new_delete_misaligned.stderr.exp \
+		sized_aligned_new_delete_misaligned.vgtest \
 	deep-backtrace.vgtest deep-backtrace.stderr.exp \
 	demangle.stderr.exp demangle.vgtest \
 	big_debuginfo_symbol.stderr.exp big_debuginfo_symbol.vgtest \
@@ -220,6 +227,7 @@ EXTRA_DIST = \
 	memalign_args.vgtest memalign_args.stderr.exp \
 		memalign_args.stderr.exp-glibc \
 		memalign_args.stderr.exp-ppc64 \
+		memalign_args.stderr.exp-arm \
 	memcmptest.stderr.exp memcmptest.stderr.exp2 \
 	memcmptest.stdout.exp memcmptest.vgtest \
 	memmem.stderr.exp memmem.vgtest \
@@ -279,6 +287,21 @@ EXTRA_DIST = \
 	reach_thread_register.stderr.exp reach_thread_register.vgtest \
 		reach_thread_register.stderr.exp-mips32 \
 		reach_thread_register.stderr.exp-mips64 \
+	realloc_size_zero.stderr.exp realloc_size_zero.stdout.exp-glibc \
+		realloc_size_zero.stdout.exp-other \
+		realloc_size_zero.vgtest \
+	realloc_size_zero_yes.stderr.exp realloc_size_zero_yes.stdout.exp \
+		realloc_size_zero_yes.vgtest \
+	realloc_size_zero_no.stderr.exp realloc_size_zero_no.stdout.exp \
+		realloc_size_zero_no.vgtest \
+	realloc_size_zero_off.stderr.exp realloc_size_zero_off.stdout.exp \
+		realloc_size_zero_off.vgtest \
+	realloc_size_zero_mismatch.stderr.exp \
+		realloc_size_zero_mismatch.stdout.exp \
+		realloc_size_zero_mismatch.vgtest \
+	realloc_size_zero_supp.stderr.exp realloc_size_zero_supp.stdout.exp \
+		realloc_size_zero_supp.vgtest \
+		realloc_size_zero.supp \
 	realloc1.stderr.exp realloc1.vgtest \
 	realloc2.stderr.exp realloc2.vgtest \
 	realloc3.stderr.exp realloc3.vgtest \
@@ -435,6 +458,7 @@ check_PROGRAMS = \
 	pipe pointer-trace \
 	posix_memalign \
 	post-syscall \
+	realloc_size_zero realloc_size_zero_mismatch \
 	realloc1 realloc2 realloc3 \
 	recursive-merge \
 	resvn_stack \
@@ -485,7 +509,8 @@ cdebug_zlib_gnu_CFLAGS = $(AM_CFLAGS) -g -gz=zlib-gnu @FLAG_W_NO_UNINITIALIZED@
 endif
 
 if HAVE_ALIGNED_CXX_ALLOC
-check_PROGRAMS += cxx17_aligned_new
+check_PROGRAMS += cxx17_aligned_new sized_aligned_new_delete_args \
+	sized_aligned_new_delete_misaligned
 endif
 
 if HAVE_PTHREAD_BARRIER
@@ -546,6 +571,10 @@ bug340392_CFLAGS        = $(AM_CFLAGS) -O3 @FLAG_W_NO_MAYBE_UNINITIALIZED@
 if HAVE_ALIGNED_CXX_ALLOC
 cxx17_aligned_new_SOURCES  = cxx17_aligned_new.cpp
 cxx17_aligned_new_CXXFLAGS = -std=c++17 @FLAG_W_NO_MISMATCHED_NEW_DELETE@
+sized_aligned_new_delete_args_SOURCES = sized_aligned_new_delete_args.cpp
+sized_aligned_new_delete_args_CXXFLAGS = ${AM_CXXFLAGS} -std=c++17
+sized_aligned_new_delete_misaligned_SOURCES = sized_aligned_new_delete_misaligned.cpp
+sized_aligned_new_delete_misaligned_CXXFLAGS = ${AM_CXXFLAGS} -std=c++17
 endif
 
 demangle_SOURCES = demangle.cpp
@@ -623,6 +652,8 @@ overlap_CFLAGS		= $(AM_CFLAGS) -fno-builtin-memcpy -fno-builtin-strcpy \
 partial_load_CFLAGS	= $(AM_CFLAGS) @FLAG_W_NO_USE_AFTER_FREE@
 reach_thread_register_CFLAGS	= $(AM_CFLAGS) -O2
 reach_thread_register_LDADD	= -lpthread
+
+realloc_size_zero_mismatch_SOURCES = realloc_size_zero_mismatch.cpp
 
 resvn_stack_CFLAGS      = $(AM_CFLAGS) @FLAG_W_NO_UNINITIALIZED@
 
