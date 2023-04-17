@@ -10982,13 +10982,7 @@ POST(shared_region_check_np)
 
   if (RES == 0) {
     POST_MEM_WRITE(ARG1, sizeof(uint64_t));
-    uint64_t shared_region = *((uint64_t*) ARG1);
-    PRINT("shared dyld cache %#llx", shared_region);
-    // TODO: invalid, take a more granular to allow better dylib mapping too
-    ML_(notify_core_and_tool_of_mmap)(
-      shared_region, VG_PGROUNDUP(0x0FFE00000ULL),
-      VKI_PROT_WRITE | VKI_PROT_EXEC, VKI_MAP_SHARED, -1, 0);
-    // TODO: arm64: 0x100000000ULL
+    PRINT("shared dyld cache %#llx", *((uint64_t*) ARG1));
   }
 }
 
@@ -10998,6 +10992,24 @@ PRE(shared_region_map_and_slide_np)
   PRE_REG_READ6(kern_return_t, "shared_region_map_and_slide_np",
     int, fd, uint32_t, count, const struct shared_file_mapping_np*, mappings,
     uint32_t, slide, uint64_t*, slide_start, uint32_t, slide_size);
+}
+
+PRE(task_read_for_pid)
+{
+  PRINT("task_read_for_pid(%s, %ld, %#lx)", name_for_port(ARG1), ARG2, ARG3);
+  PRE_REG_READ3(kern_return_t, "task_read_for_pid", mach_port_name_t, target_tport, int, pid, mach_port_name_t*, t);
+
+  if (ARG3 != 0) {
+    PRE_MEM_WRITE("task_read_for_pid(t)", ARG3, sizeof(mach_port_name_t));
+  }
+}
+
+POST(task_read_for_pid)
+{
+  if (RES == 0 && ARG3 != 0) {
+    POST_MEM_WRITE(ARG3, sizeof(mach_port_name_t));
+    PRINT("-> t:%s", name_for_port(*(mach_port_name_t*)ARG3));
+  }
 }
 
 #endif /* DARWIN_VERS >= DARWIN_11_00 */
@@ -11699,7 +11711,7 @@ const SyscallTableEntry ML_(syscall_table)[] = {
 // _____(__NR_shared_region_map_and_slide_2_np),        // 536
 // _____(__NR_pivot_root),                              // 537
 // _____(__NR_task_inspect_for_pid),                    // 538
-// _____(__NR_task_read_for_pid),                       // 539
+   MACXY(__NR_task_read_for_pid, task_read_for_pid),    // 539
 // _____(__NR_sys_preadv),                              // 540
 // _____(__NR_sys_pwritev),                             // 541
 // _____(__NR_sys_preadv_nocancel),                     // 542
