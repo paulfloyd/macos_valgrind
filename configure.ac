@@ -17,8 +17,8 @@
 m4_define([v_major_ver], [3])
 m4_define([v_minor_ver], [21])
 m4_define([v_micro_ver], [0])
-m4_define([v_suffix_ver], [GIT])
-m4_define([v_rel_date], ["?? Apr 2023"])
+m4_define([v_suffix_ver], [RC1])
+m4_define([v_rel_date], ["14 Apr 2023"])
 m4_define([v_version],
 	  m4_if(v_suffix_ver, [],
 		[v_major_ver.v_minor_ver.v_micro_ver],
@@ -451,8 +451,10 @@ case "${host_os}" in
         freebsd_12_2=1220
         AC_DEFINE([FREEBSD_13_0], 1300, [FREEBSD_VERS value for FreeBSD 13.0])
         freebsd_13_0=1300
-        AC_DEFINE([FREEBSD_13_1], 1310, [FREEBSD_VERS value for FreeBSD 13.1+])
+        AC_DEFINE([FREEBSD_13_1], 1310, [FREEBSD_VERS value for FreeBSD 13.1])
         freebsd_13_1=1310
+        AC_DEFINE([FREEBSD_13_2], 1320, [FREEBSD_VERS value for FreeBSD 13.2])
+        freebsd_13_2=1320
         AC_DEFINE([FREEBSD_14], 1400, [FREEBSD_VERS value for FreeBSD 14.x])
         freebsd_14=1400
 
@@ -491,10 +493,15 @@ case "${host_os}" in
               AC_DEFINE([FREEBSD_VERS], FREEBSD_13_0, [FreeBSD version])
               freebsd_vers=$freebsd_13_0
               ;;
-           *)
-              AC_MSG_RESULT([FreeBSD 13.1+ (${kernel})])
+           13.1-*)
+              AC_MSG_RESULT([FreeBSD 13.1 (${kernel})])
               AC_DEFINE([FREEBSD_VERS], FREEBSD_13_1, [FreeBSD version])
               freebsd_vers=$freebsd_13_1
+              ;;
+           13.2-*)
+              AC_MSG_RESULT([FreeBSD 13.2 (${kernel})])
+              AC_DEFINE([FREEBSD_VERS], FREEBSD_13_2, [FreeBSD version])
+              freebsd_vers=$freebsd_13_2
               ;;
            esac
            ;;
@@ -4612,11 +4619,11 @@ if test "X$VGCONF_ARCH_PRI" = "Xamd64"; then
 else
   libscf=/usr/lib/libscf.so.1
 fi
-if ! $DIS_PATH -F scf_handle_bind $libscf  | grep -q 0x526570; then
+if ! $DIS_PATH -F scf_handle_bind $libscf  | grep -q -E '0x(4d01)?526570'; then
   AC_MSG_WARN([Function `scf_handle_bind' does not contain repository cache protocol version.])
   AC_MSG_ERROR([Cannot determine version of the repository cache protocol.])
 fi
-hex=$( $DIS_PATH -F scf_handle_bind $libscf  | sed -n 's/.*0x526570\(..\).*/\1/p' )
+hex=$( $DIS_PATH -F scf_handle_bind $libscf  | perl -pe '($_) = /0x(?:4d01)?526570(\d{2}),/' )
 if test -z "$hex"; then
   AC_MSG_WARN([Version of the repository cache protocol is empty?!])
   AC_MSG_ERROR([Cannot determine version of the repository cache protocol.])
@@ -4921,6 +4928,7 @@ AC_CHECK_FUNCS([     \
         memset       \
         mkdir        \
         mremap       \
+        pipe2	     \
         ppoll        \
         preadv       \
         preadv2      \
