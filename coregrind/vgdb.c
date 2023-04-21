@@ -49,9 +49,10 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 
-/* vgdb has two usages:
+/* vgdb has three usages:
    1. relay application between gdb and the gdbserver embedded in valgrind.
    2. standalone to send monitor commands to a running valgrind-ified process
+   3. multi mode where vgdb uses the GDB extended remote protocol.
 
    It is made of a main program which reads arguments.  If no
    arguments are given or only --pid and --vgdb-prefix, then usage 1 is
@@ -67,6 +68,12 @@
    As a standalone utility, vgdb builds command packets to write to valgrind,
    sends it and reads the reply. The same two threads are used to write/read.
    Once all the commands are sent and their replies received, vgdb will exit.
+
+   When --multi is given vgdb communicates with GDB through the extended remote
+   protocol and will launch valgrind whenever GDB sends the vRun packet, after
+   which it will function in the first mode, relaying packets between GDB and
+   the gdbserver embedded in valgrind till that valgrind quits. vgdb will stay
+   connected to GDB.
 */
 
 int debuglevel;
@@ -398,7 +405,14 @@ int read_buf(int fd, char* buf, const char* desc)
 {
    int nrread;
    DEBUG(2, "reading %s\n", desc);
-   nrread = read(fd, buf, PBUFSIZ);
+   /* The file descriptor is on non-blocking mode and read_buf should only
+      be called when poll gave us an POLLIN event signaling the file
+      descriptor is ready for reading from. Still sometimes we do get an
+      occasional EAGAIN. Just do as told in that case and try to read
+      again.  */
+   do {
+      nrread = read(fd, buf, PBUFSIZ);
+   } while (nrread == -1 && errno == EAGAIN);
    if (nrread == -1) {
       ERROR(errno, "error reading %s\n", desc);
       return -1;
@@ -703,12 +717,12 @@ getpkt(char *buf, int fromfd, int ackfd)
      c2 = fromhex(readchar (fromfd));
 
      if (csum == (c1 << 4) + c2)
-	break;
+        break;
 
      TSFPRINTF(stderr, "Bad checksum, sentsum=0x%x, csum=0x%x, buf=%s\n",
                (c1 << 4) + c2, csum, buf);
      if (write(ackfd, "-", 1) != 1)
-        ERROR(0, "error when writing - (nack)\n");
+        ERROR(errno, "error when writing - (nack)\n");
      else
         add_written(1);
   }
@@ -893,8 +907,7 @@ int tohex (int nib)
       return 'a' + nib - 10;
 }
 
-/* Returns an allocated hex-decoded string from the buf starting at offset
-   off. Will update off to where the buf has been decoded. Stops decoding
+/* Returns an allocated hex-decoded string from the buf. Stops decoding
    at end of buf (zero) or when seeing the delim char.  */
 static
 char *decode_hexstring (const char *buf, size_t prefixlen, size_t len)
@@ -940,7 +953,7 @@ write_checksum (const char *str)
   unsigned char csum = 0;
   int i = 0;
   while (str[i] != 0)
-     csum += str[i++];
+    csum += str[i++];
 
   char p[2];
   p[0] = tohex ((csum >> 4) & 0x0f);
@@ -957,7 +970,7 @@ write_reply(const char *reply)
    return write_checksum (reply);
 }
 
-/* Creates a packet from a string message, called needs to free.  */
+/* Creates a packet from a string message, caller needs to free.  */
 static char *
 create_packet(const char *msg)
 {
@@ -988,24 +1001,24 @@ static int read_one_char (char *c)
 static Bool
 send_packet(const char *reply, int noackmode)
 {
-    int ret;
-    char c;
+   int ret;
+   char c;
 
 send_packet_start:
    if (!write_reply(reply))
-      return False;
-    if (!noackmode) {
-        // Look for '+' or '-'.
-        // We must wait for "+" if !noackmode.
-        do {
-            ret = read_one_char(&c);
-            if (ret <= 0)
-               return False;
-            // And if in !noackmode if we get "-" we should resent the packet.
-            if (c == '-')
-                goto send_packet_start;
-        } while (c != '+');
-        DEBUG(1, "sent packet to gdb got: %c\n",c);
+     return False;
+   if (!noackmode) {
+     // Look for '+' or '-'.
+     // We must wait for "+" if !noackmode.
+      do {
+         ret = read_one_char(&c);
+         if (ret <= 0)
+            return False;
+         // And if in !noackmode if we get "-" we should resent the packet.
+         if (c == '-')
+            goto send_packet_start;
+      } while (c != '+');
+     DEBUG(1, "sent packet to gdb got: %c\n",c);
    }
    return True;
 }
@@ -1016,92 +1029,96 @@ send_packet_start:
 // or -1 if no packet could be read.
 static int receive_packet(char *buf, int noackmode)
 {
-    int bufcnt = 0, ret;
-    char c, c1, c2;
-    unsigned char csum = 0;
+   int bufcnt = 0, ret;
+   char c, c1, c2;
+   unsigned char csum = 0;
 
-    // Look for first '$' (start of packet) or error.
- receive_packet_start:
-    do {
-       ret = read_one_char(&c);
-       if (ret <= 0)
-        return ret;
-    } while (c != '$');
+   // Look for first '$' (start of packet) or error.
+receive_packet_start:
+   do {
+     ret = read_one_char(&c);
+     if (ret <= 0)
+       return ret;
+   } while (c != '$');
 
-    // Found start of packet ('$')
-    while (bufcnt < (PBUFSIZ+1)) {
-       ret = read_one_char(&c);
-       if (ret <= 0)
-          return ret;
-       if (c == '#') {
-          if ((ret = read_one_char(&c1)) <= 0
-              || (ret = read_one_char(&c2)) <= 0) {
-             return ret;
-          }
-          c1 = fromhex(c1);
-          c2 = fromhex(c2);
-          break;
-       }
-       buf[bufcnt] = c;
-       csum += buf[bufcnt];
-       bufcnt++;
-    }
+   // Found start of packet ('$')
+   while (bufcnt < (PBUFSIZ+1)) {
+      ret = read_one_char(&c);
+      if (ret <= 0)
+         return ret;
+      if (c == '#') {
+         if ((ret = read_one_char(&c1)) <= 0
+             || (ret = read_one_char(&c2)) <= 0) {
+            return ret;
+         }
+         c1 = fromhex(c1);
+         c2 = fromhex(c2);
+         break;
+      }
+      buf[bufcnt] = c;
+      csum += buf[bufcnt];
+      bufcnt++;
+   }
 
-    // Packet complete, add terminator.
-    buf[bufcnt] ='\0';
+   // Packet complete, add terminator.
+   buf[bufcnt] ='\0';
 
-    if (!(csum == (c1 << 4) + c2)) {
-        TSFPRINTF(stderr, "Bad checksum, sentsum=0x%x, csum=0x%x, buf=%s\n",
-              (c1 << 4) + c2, csum, buf);
-        if (!noackmode)
-           if (!write_to_gdb ("-", 1))
-              return -1;
-        /* Try again, gdb should resend the packet.  */
-        bufcnt = 0;
-        csum = 0;
-        goto receive_packet_start;
-    }
+   if (!(csum == (c1 << 4) + c2)) {
+      TSFPRINTF(stderr, "Bad checksum, sentsum=0x%x, csum=0x%x, buf=%s\n",
+                (c1 << 4) + c2, csum, buf);
+      if (!noackmode)
+         if (!write_to_gdb ("-", 1))
+            return -1;
+      /* Try again, gdb should resend the packet.  */
+      bufcnt = 0;
+      csum = 0;
+      goto receive_packet_start;
+   }
 
-    if (!noackmode)
-       if (!write_to_gdb ("+", 1))
-          return -1;
-    return bufcnt;
+   if (!noackmode)
+     if (!write_to_gdb ("+", 1))
+       return -1;
+   return bufcnt;
 }
 
 // Returns a pointer to the char after the next delim char.
 static const char *next_delim_string (const char *buf, char delim)
 {
-    while (*buf) {
-        if (*buf++ == delim)
-            break;
-    }
-    return buf;
+  while (*buf) {
+      if (*buf++ == delim)
+           break;
+   }
+   return buf;
 }
 
-// Throws away the packet name and decodes the hex string, which is placed in
-// decoded_string (the caller owns this and is responsible for freeing it).
+/* buf starts with the packet name followed by the delimiter, for example
+ * vRun;2f62696e2f6c73, ";" is the delimiter here, or
+ * qXfer:features:read:target.xml:0,1000, where the delimiter is ":".
+ * The packet name is thrown away and the hex string is decoded and
+ * is placed in decoded_string (the caller owns this and is responsible
+ * for freeing it). */
 static int split_hexdecode(const char *buf, const char *string,
                            const char *delim, char **decoded_string)
 {
-    const char *next_str = next_delim_string(buf, *delim);
-    if (next_str) {
-        *decoded_string = decode_hexstring (next_str, 0, 0);
-        DEBUG(1, "split_hexdecode decoded %s\n", *decoded_string);
-        return 1;
-    } else {
-        TSFPRINTF(stderr, "%s decoding error: finding the hex string in %s failed!\n", string, buf);
-        return 0;
-    }
+   const char *next_str = next_delim_string(buf, *delim);
+   if (next_str) {
+     *decoded_string = decode_hexstring (next_str, 0, 0);
+     DEBUG(1, "split_hexdecode decoded %s\n", *decoded_string);
+     return 1;
+   } else {
+     TSFPRINTF(stderr, "%s decoding error: finding the hex string in %s failed!\n", string, buf);
+     return 0;
+   }
 }
 
-static int count_delims(char delim, char *buf)
+static size_t count_delims(char delim, char *buf)
 {
-    size_t count = 0;
-    char *ptr = buf;
+   size_t count = 0;
+   char *ptr = buf;
 
-    while (*ptr)
-        count += *ptr++ == delim;
-    return count;
+   while (*ptr)
+       count += *ptr++ == delim;
+   return count;
 }
 
 // Determine the length of the arguments.
@@ -1291,7 +1308,7 @@ void do_multi_mode(void)
           break;
        }
        
-       DEBUG(1, "packet recieved: '%s'\n", buf);
+       DEBUG(1, "packet received: '%s'\n", buf);
 
 #define QSUPPORTED "qSupported:"
 #define STARTNOACKMODE "QStartNoAckMode"
@@ -1305,68 +1322,68 @@ void do_multi_mode(void)
 #define QSETWORKINGDIR "QSetWorkingDir"
 #define QTSTATUS "qTStatus"
        
-      if (strncmp(QSUPPORTED, buf, strlen(QSUPPORTED)) == 0) {
-	 DEBUG(1, "CASE %s\n", QSUPPORTED);
-	 // And here is our reply.
-	 // XXX error handling? We don't check the arguments.
-         char *reply;
-         strcpy(q_buf, buf);
-         // Keep this in sync with coregrind/m_gdbserver/server.c
-	 asprintf (&reply,
-                   "PacketSize=%x;"
-                   "QStartNoAckMode+;"
-                   "QPassSignals+;"
-                   "QCatchSyscalls+;"
-                   /* Just report support always. */
-                   "qXfer:auxv:read+;"
-                   /* We'll force --vgdb-shadow-registers=yes */
-                   "qXfer:features:read+;"
-                   "qXfer:exec-file:read+;"
-                   "qXfer:siginfo:read+;"
-                   /* Some extra's vgdb support before valgrind starts up. */
-                   "QEnvironmentHexEncoded+;"
-                   "QEnvironmentReset+;"
-                   "QEnvironmentUnset+;"
-                   "QSetWorkingDir+", (UInt)PBUFSIZ - 1);
-	 send_packet(reply, noackmode);
-         free (reply);
-      }
-      else if (strncmp(STARTNOACKMODE, buf, strlen(STARTNOACKMODE)) == 0) {
-	 // We have to ack this one
-	 send_packet("OK", 0);
-	 noackmode = 1;
-      }
-      else if (buf[0] == '!') {
-	 send_packet("OK", noackmode);
-      }
-      else if (buf[0] == '?') {
-	 send_packet("W00", noackmode);
-      }
-      else if (strncmp("H", buf, strlen("H")) == 0) {
-	 // Set thread packet, but we are not running yet.
-	 send_packet("E01", noackmode);
-      }
-      else if (strncmp("vMustReplyEmpty", buf, strlen("vMustReplyEmpty")) == 0) {
-	 send_packet ("", noackmode);
-      }
-      else if (strncmp(QRCMD, buf, strlen(QRCMD)) == 0) {
-         send_packet ("No running target, monitor commands not available yet.", noackmode);
+       if (strncmp(QSUPPORTED, buf, strlen(QSUPPORTED)) == 0) {
+          DEBUG(1, "CASE %s\n", QSUPPORTED);
+          // And here is our reply.
+          // XXX error handling? We don't check the arguments.
+          char *reply;
+          strcpy(q_buf, buf);
+          // Keep this in sync with coregrind/m_gdbserver/server.c
+          asprintf (&reply,
+                    "PacketSize=%x;"
+                    "QStartNoAckMode+;"
+                    "QPassSignals+;"
+                    "QCatchSyscalls+;"
+                    /* Just report support always. */
+                    "qXfer:auxv:read+;"
+                    /* We'll force --vgdb-shadow-registers=yes */
+                    "qXfer:features:read+;"
+                    "qXfer:exec-file:read+;"
+                    "qXfer:siginfo:read+;"
+                    /* Some extra's vgdb support before valgrind starts up. */
+                    "QEnvironmentHexEncoded+;"
+                    "QEnvironmentReset+;"
+                    "QEnvironmentUnset+;"
+                    "QSetWorkingDir+", (UInt)PBUFSIZ - 1);
+          send_packet(reply, noackmode);
+          free (reply);
+       }
+       else if (strncmp(STARTNOACKMODE, buf, strlen(STARTNOACKMODE)) == 0) {
+          // We have to ack this one
+          send_packet("OK", 0);
+          noackmode = 1;
+       }
+       else if (buf[0] == '!') {
+          send_packet("OK", noackmode);
+       }
+       else if (buf[0] == '?') {
+          send_packet("W00", noackmode);
+       }
+       else if (strncmp("H", buf, strlen("H")) == 0) {
+          // Set thread packet, but we are not running yet.
+          send_packet("E01", noackmode);
+       }
+       else if (strncmp("vMustReplyEmpty", buf, strlen("vMustReplyEmpty")) == 0) {
+          send_packet ("", noackmode);
+       }
+       else if (strncmp(QRCMD, buf, strlen(QRCMD)) == 0) {
+          send_packet ("No running target, monitor commands not available yet.", noackmode);
 
-         char *decoded_string = decode_hexstring (buf, strlen (QRCMD) + 1, 0);
-         DEBUG(1, "qRcmd decoded: %s\n", decoded_string);
-         free (decoded_string);
-      }
-      else if (strncmp(VRUN, buf, strlen(VRUN)) == 0) {
+          char *decoded_string = decode_hexstring (buf, strlen (QRCMD) + 1, 0);
+          DEBUG(1, "qRcmd decoded: %s\n", decoded_string);
+          free (decoded_string);
+       }
+       else if (strncmp(VRUN, buf, strlen(VRUN)) == 0) {
           // vRun;filename[;argument]*
           // vRun, filename and arguments are split on ';',
           // no ';' at the end.
           // If there are no arguments count is one (just the filename).
           // Otherwise it is the number of arguments plus one (the filename).
           // The filename must be there and starts after the first ';'.
-         // TODO: Handle vRun;[;argument]*
-         // https://www.sourceware.org/gdb/onlinedocs/gdb/Packets.html#Packets
-         // If filename is an empty string, the stub may use a default program
-         // (e.g. the last program run).
+          // TODO: Handle vRun;[;argument]*
+          // https://www.sourceware.org/gdb/onlinedocs/gdb/Packets.html#Packets
+          // If filename is an empty string, the stub may use a default program
+          // (e.g. the last program run).
           size_t count = count_delims(';', buf);
           size_t *len = vmalloc(count * sizeof(count));
           const char *delim = ";";
@@ -1376,183 +1393,186 @@ void do_multi_mode(void)
           // Count the lenghts of each substring, init to -1 to compensate for
           // each substring starting with a delim char.
           for (int i = 0; i < count; i++)
-              len[i] = -1;
+             len[i] = -1;
           count_len(';', buf, len);
           if (next_str) {
-              DEBUG(1, "vRun: next_str %s\n", next_str);
-              for (int i = 0; i < count; i++) {
-                  /* Handle the case when the arguments
-                   * was specified to gdb's run command
-                   * but no remote exec-file was set,
-                   * so the first vRun argument is missing.
-                   * For example vRun;;6c.  */
-                  if (*next_str == *delim) {
-                      next_str++;
-                      /* empty string that can be freed. */
-                      decoded_string[i] = strdup("");
-                  }
-                  else {
-                      decoded_string[i] = decode_hexstring (next_str, 0, len[i]);
-                      if (i < count - 1)
-                          next_str = next_delim_string(next_str, *delim);
-                  }
-                  DEBUG(1, "vRun decoded: %s, next_str %s, len[%d] %d\n", decoded_string[i], next_str, i, len[i]);
-              }
+             DEBUG(1, "vRun: next_str %s\n", next_str);
+             for (int i = 0; i < count; i++) {
+                /* Handle the case when the arguments
+                 * was specified to gdb's run command
+                 * but no remote exec-file was set,
+                 * so the first vRun argument is missing.
+                 * For example vRun;;6c.  */
+                if (*next_str == *delim) {
+                   next_str++;
+                   /* empty string that can be freed. */
+                   decoded_string[i] = strdup("");
+                }
+                else {
+                   decoded_string[i] = decode_hexstring (next_str, 0, len[i]);
+                   if (i < count - 1)
+                      next_str = next_delim_string(next_str, *delim);
+                }
+                DEBUG(1, "vRun decoded: %s, next_str %s, len[%d] %d\n",
+                      decoded_string[i], next_str, i, len[i]);
+             }
 
-              /* If we didn't get any arguments or the filename is an empty
-                 string, valgrind won't know which program to run.  */
-              DEBUG (1, "count: %d, len[0]: %d\n", count, len[0]);
-              if (! count || len[0] == 0) {
-                 free(len);
-                 for (int i = 0; i < count; i++)
-                    free (decoded_string[i]);
-                 free (decoded_string);
-                 send_packet ("E01", noackmode);
-                 continue;
-              }
+             /* If we didn't get any arguments or the filename is an empty
+                string, valgrind won't know which program to run.  */
+             DEBUG (1, "count: %d, len[0]: %d\n", count, len[0]);
+             if (! count || len[0] == 0) {
+                free(len);
+                for (int i = 0; i < count; i++)
+                   free (decoded_string[i]);
+                free (decoded_string);
+                send_packet ("E01", noackmode);
+                continue;
+             }
 
-              /* We have collected the decoded strings so we can use them to
-                 launch valgrind with the correct arguments... We then use the
-                 valgrind pid to start relaying packets.  */
-              pid_t valgrind_pid = -1;
-              int res = fork_and_exec_valgrind (count,
-                                                decoded_string,
-                                                working_dir,
-                                                &valgrind_pid);
+             /* We have collected the decoded strings so we can use them to
+                launch valgrind with the correct arguments... We then use the
+                valgrind pid to start relaying packets.  */
+             pid_t valgrind_pid = -1;
+             int res = fork_and_exec_valgrind (count,
+                                               decoded_string,
+                                               working_dir,
+                                               &valgrind_pid);
 
-              if (res == 0) {
-                 // Lets report we Stopped with SIGTRAP (05).
-                 send_packet ("S05", noackmode);
-                 prepare_fifos_and_shared_mem(valgrind_pid);
-                 DEBUG(1, "from_gdb_to_pid %s, to_gdb_from_pid %s\n", from_gdb_to_pid, to_gdb_from_pid);
-                 // gdb_rely is an endless loop till valgrind quits.
-                 shutting_down = False;
+             if (res == 0) {
+                // Lets report we Stopped with SIGTRAP (05).
+                send_packet ("S05", noackmode);
+                prepare_fifos_and_shared_mem(valgrind_pid);
+                DEBUG(1, "from_gdb_to_pid %s, to_gdb_from_pid %s\n",
+                      from_gdb_to_pid, to_gdb_from_pid);
+                // gdb_relay is an endless loop till valgrind quits.
+                shutting_down = False;
 
-                 gdb_relay (valgrind_pid, 1, q_buf);
-                 cleanup_fifos_and_shared_mem();
-                 DEBUG(1, "valgrind relay done\n");
-                 int status;
-                 pid_t p = waitpid (valgrind_pid, &status, 0);
-                 DEBUG(2, "waitpid: %d\n", (int) p);
-                 if (p == -1)
-                    DEBUG(1, "waitpid error %s\n", strerror (errno));
-                 else {
-                    if (WIFEXITED(status))
-                       DEBUG(1, "valgrind exited with %d\n",
-                             WEXITSTATUS(status));
-                    else if (WIFSIGNALED(status))
-                       DEBUG(1, "valgrind kill by signal %d\n",
-                             WTERMSIG(status));
-                    else
-                       DEBUG(1, "valgind unexpectedly stopped or continued");
-                 }
-              } else {
-                 send_packet ("E01", noackmode);
-                 DEBUG(1, "OOPS! couldn't launch valgrind %s\n",
-                       strerror (res));
-              }
+                gdb_relay (valgrind_pid, 1, q_buf);
+                cleanup_fifos_and_shared_mem();
+                DEBUG(1, "valgrind relay done\n");
+                int status;
+                pid_t p = waitpid (valgrind_pid, &status, 0);
+                DEBUG(2, "waitpid: %d\n", (int) p);
+                if (p == -1)
+                   DEBUG(1, "waitpid error %s\n", strerror (errno));
+                else {
+                   if (WIFEXITED(status))
+                      DEBUG(1, "valgrind exited with %d\n",
+                            WEXITSTATUS(status));
+                   else if (WIFSIGNALED(status))
+                      DEBUG(1, "valgrind kill by signal %d\n",
+                            WTERMSIG(status));
+                   else
+                      DEBUG(1, "valgrind unexpectedly stopped or continued");
+                }
+             } else {
+                send_packet ("E01", noackmode);
+                DEBUG(1, "OOPS! couldn't launch valgrind %s\n",
+                      strerror (res));
+             }
 
-              free(len);
-              for (int i = 0; i < count; i++)
-                  free (decoded_string[i]);
-              free (decoded_string);
-          } else {
-              free(len);
+             free(len);
+             for (int i = 0; i < count; i++)
+		free (decoded_string[i]);
+             free (decoded_string);
+	  } else {
+             free(len);
              send_packet ("E01", noackmode);
-              DEBUG(1, "vRun decoding error: no next_string!\n");
-              continue;
-          }
-      } else if (strncmp(QATTACHED, buf, strlen(QATTACHED)) == 0) {
-         send_packet ("1", noackmode);
-         DEBUG(1, "qAttached sent: '1'\n");
-         const char *next_str = next_delim_string(buf, ':');
-         if (next_str) {
+             DEBUG(1, "vRun decoding error: no next_string!\n");
+             continue;
+	  }
+       } else if (strncmp(QATTACHED, buf, strlen(QATTACHED)) == 0) {
+          send_packet ("1", noackmode);
+          DEBUG(1, "qAttached sent: '1'\n");
+          const char *next_str = next_delim_string(buf, ':');
+          if (next_str) {
              char *decoded_string = decode_hexstring (next_str, 0, 0);
              DEBUG(1, "qAttached decoded: %s, next_str %s\n", decoded_string, next_str);
              free (decoded_string);
-         } else {
+          } else {
              DEBUG(1, "qAttached decoding error: strdup of %s failed!\n", buf);
              continue;
-         }
-      } /* Reset the state of environment variables in the remote target before starting
-           the inferior. In this context, reset means unsetting all environment variables
-           that were previously set by the user (i.e., were not initially present in the environment). */
-      else if (strncmp(QENVIRONMENTRESET, buf,
-                         strlen(QENVIRONMENTRESET)) == 0) {
-            send_packet ("OK", noackmode);
-            // TODO clear all environment strings. We're not using
-            // environment strings now. But we should.
-      } else if (strncmp(QENVIRONMENTHEXENCODED, buf,
-                         strlen(QENVIRONMENTHEXENCODED)) == 0) {
-            send_packet ("OK", noackmode);
-            if (!split_hexdecode(buf, QENVIRONMENTHEXENCODED, ":", &string))
-                break;
-            // TODO Collect all environment strings and add them to environ
-            // before launcing valgrind.
-            free (string);
-            string = NULL;
-      } else if (strncmp(QENVIRONMENTUNSET, buf,
-                         strlen(QENVIRONMENTUNSET)) == 0) {
-            send_packet ("OK", noackmode);
-            if (!split_hexdecode(buf, QENVIRONMENTUNSET, ":", &string))
-                break;
-            // TODO Remove this environment string from the collection.
-            free (string);
-            string = NULL;
-      } else if (strncmp(QSETWORKINGDIR, buf,
-                         strlen(QSETWORKINGDIR)) == 0) {
-         // Silly, but we can only reply OK, even if the working directory is
-         // bad. Errors will be reported when we try to execute the actual
-         // process.
-         send_packet ("OK", noackmode);
-         // Free any previously set working_dir
-         free (working_dir);
-         working_dir = NULL;
-         if (!split_hexdecode(buf, QSETWORKINGDIR, ":", &working_dir)) {
-            continue; // We cannot report the error to gdb...
-         }
-         DEBUG(1, "set working dir to: %s\n", working_dir);
-      } else if (strncmp(XFER, buf, strlen(XFER)) == 0) {
+          }
+       } /* Reset the state of environment variables in the remote target
+            before starting the inferior. In this context, reset means
+            unsetting all environment variables that were previously set
+            by the user (i.e., were not initially present in the environment). */
+       else if (strncmp(QENVIRONMENTRESET, buf,
+                        strlen(QENVIRONMENTRESET)) == 0) {
+          send_packet ("OK", noackmode);
+          // TODO clear all environment strings. We're not using
+          // environment strings now. But we should.
+       } else if (strncmp(QENVIRONMENTHEXENCODED, buf,
+                          strlen(QENVIRONMENTHEXENCODED)) == 0) {
+          send_packet ("OK", noackmode);
+          if (!split_hexdecode(buf, QENVIRONMENTHEXENCODED, ":", &string))
+             break;
+          // TODO Collect all environment strings and add them to environ
+          // before launching valgrind.
+          free (string);
+          string = NULL;
+       } else if (strncmp(QENVIRONMENTUNSET, buf,
+                          strlen(QENVIRONMENTUNSET)) == 0) {
+          send_packet ("OK", noackmode);
+          if (!split_hexdecode(buf, QENVIRONMENTUNSET, ":", &string))
+             break;
+          // TODO Remove this environment string from the collection.
+          free (string);
+          string = NULL;
+       } else if (strncmp(QSETWORKINGDIR, buf,
+                          strlen(QSETWORKINGDIR)) == 0) {
+          // Silly, but we can only reply OK, even if the working directory is
+          // bad. Errors will be reported when we try to execute the actual
+          // process.
+          send_packet ("OK", noackmode);
+          // Free any previously set working_dir
+          free (working_dir);
+          working_dir = NULL;
+          if (!split_hexdecode(buf, QSETWORKINGDIR, ":", &working_dir)) {
+             continue; // We cannot report the error to gdb...
+          }
+          DEBUG(1, "set working dir to: %s\n", working_dir);
+       } else if (strncmp(XFER, buf, strlen(XFER)) == 0) {
           char *buf_dup = strdup(buf);
           DEBUG(1, "strdup: buf_dup %s\n", buf_dup);
           if (buf_dup) {
-              const char *delim = ":";
-              size_t count = count_delims(delim[0], buf);
-              if (count < 4) {
-                  strsep(&buf_dup, delim);
-                  strsep(&buf_dup, delim);
-                  strsep(&buf_dup, delim);
-                  char *decoded_string = decode_hexstring (buf_dup, 0, 0);
-                  DEBUG(1, "qXfer decoded: %s, buf_dup %s\n", decoded_string, buf_dup);
-                  free (decoded_string);
-              }
-              free (buf_dup);
+             const char *delim = ":";
+             size_t count = count_delims(delim[0], buf);
+             if (count < 4) {
+                strsep(&buf_dup, delim);
+                strsep(&buf_dup, delim);
+                strsep(&buf_dup, delim);
+                char *decoded_string = decode_hexstring (buf_dup, 0, 0);
+                DEBUG(1, "qXfer decoded: %s, buf_dup %s\n", decoded_string, buf_dup);
+                free (decoded_string);
+             }
+             free (buf_dup);
           } else {
-              DEBUG(1, "qXfer decoding error: strdup of %s failed!\n", buf);
-              free (buf_dup);
-              continue;
+             DEBUG(1, "qXfer decoding error: strdup of %s failed!\n", buf);
+             free (buf_dup);
+             continue;
           }
           // Whether we could decode it or not, we cannot handle it now.  We
           // need valgrind gdbserver to properly reply. So error out here.
           send_packet ("E00", noackmode);
-      } else if (strncmp(QTSTATUS, buf, strlen(QTSTATUS)) == 0) {
-         // We don't support trace experiments
-         DEBUG(1, "Got QTSTATUS\n");
-         send_packet ("", noackmode);
-      } else if (strcmp("qfThreadInfo", buf) == 0) {
-         DEBUG(1, "Got qfThreadInfo\n");
-         /* There are no threads yet, reply 'l' end of list. */
-         send_packet ("l", noackmode);
-      } else if (buf[0] != '\0') {
-	 // We didn't understand.
-         DEBUG(1, "Unknown packet received: '%s'\n", buf);
-         bad_unknown_packets++;
-         if (bad_unknown_packets > 10) {
-            DEBUG(1, "Too many bad/unknown packets received\n");
-            break;
-         }
-	 send_packet ("", noackmode);
-      }
+       } else if (strncmp(QTSTATUS, buf, strlen(QTSTATUS)) == 0) {
+          // We don't support trace experiments
+          DEBUG(1, "Got QTSTATUS\n");
+          send_packet ("", noackmode);
+       } else if (strcmp("qfThreadInfo", buf) == 0) {
+          DEBUG(1, "Got qfThreadInfo\n");
+          /* There are no threads yet, reply 'l' end of list. */
+          send_packet ("l", noackmode);
+       } else if (buf[0] != '\0') {
+          // We didn't understand.
+          DEBUG(1, "Unknown packet received: '%s'\n", buf);
+          bad_unknown_packets++;
+          if (bad_unknown_packets > 10) {
+             DEBUG(1, "Too many bad/unknown packets received\n");
+             break;
+          }
+          send_packet ("", noackmode);
+       }
    }
    DEBUG(1, "done doing multi stuff...\n");
    free(working_dir);
@@ -2213,7 +2233,8 @@ void parse_options(int argc, char** argv,
          /* Compute the absolute path.  */
           valgrind_path = realpath(path, NULL);
           if (!valgrind_path) {
-              TSFPRINTF(stderr, "%s is not a correct path. %s, exiting.\n", path, strerror (errno));
+              TSFPRINTF(stderr, "%s is not a correct path. %s, exiting.\n",
+			path, strerror (errno));
               exit(1);
           }
           DEBUG(2, "valgrind's real path: %s\n", valgrind_path);
@@ -2221,7 +2242,7 @@ void parse_options(int argc, char** argv,
          // Everything that follows now is an argument for valgrind
          // No other options (or commands) can follow
          // argc - i is the number of left over arguments
-         // allocate enough space, but all args in it.
+         // allocate enough space, put all args in it.
          cvargs = argc - i - 1;
          vargs = vmalloc (cvargs * sizeof(vargs));
          i++;
