@@ -1,4 +1,3 @@
-
 # Suppressions for Darwin 22.x / macOS 13.0 Ventura
 
 ############################################
@@ -64,4 +63,137 @@
    ...
    fun:___ZNK5dyld46Loader25findAndRunAllInitializersERNS_12RuntimeStateE_block_invoke
    ...
+}
+
+{
+   OSX1300:fetchSelfToken
+   Memcheck:Cond
+   fun:_fetch_self_token
+}
+
+{
+   OSX1300:createDebugControlPort
+   Memcheck:Cond
+   obj:*
+   fun:_os_trace_create_debug_control_port
+}
+
+{
+   OSX1300:libxpcInitializer
+   Memcheck:Cond
+   obj:*
+   fun:_libxpc_initializer
+}
+
+{
+   OSX1300:initClockPort
+   Memcheck:Cond
+   obj:*
+   fun:_init_clock_port
+}
+
+{
+   OSX1300:mapWithLinkingNp
+   Memcheck:Param
+   map_with_linking_np(link_info)
+   fun:__map_with_linking_np
+
+}
+
+{
+   OSX1300:realizeClassWithoutSwift
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:calloc
+   fun:_ZL24realizeClassWithoutSwiftP10objc_classS0_
+}
+
+{
+   OSX1300:fun:NXCreateMapTableFromZone
+   Memcheck:Leak
+   match-leak-kinds: all
+   fun:*alloc
+   fun:NXCreate*TableFromZone
+}
+
+{
+   OSX1300::objcInit
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:_objc_init
+}
+
+{
+   OSX1300:xpcAlloc
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:_xpc_alloc
+}
+
+{
+   OSX1300:_os_object_alloc_realized
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:class_createInstance
+   fun:_os_object_alloc_realized
+}
+
+{
+   OSX1300:xpc_string_create
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:strdup
+   fun:xpc_string_create
+}
+
+{
+   OSX1300:fetchInitializingClassListb
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:_ZL27_fetchInitializingClassListb
+}
+
+{
+   OSX1300:cacheAllocateBuckets
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:_ZN7cache_t15allocateBucketsEj
+}
+
+{
+   OSX1300:objc_safeRanges
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:realloc
+   fun:_ZN4objc10SafeRanges3addEmm
+}
+
+{
+   OSX1300:NXCreateHashTableFromZone
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc_zone_calloc
+   fun:NXCreateHashTableFromZone
+}
+
+{
+   OSX1300:_NXHashRehashToCapacity
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc_zone_calloc
+   fun:_NXHashRehashToCapacity
+}
+
+{
+   OSX1300:_ZL27_fetchInitializingClassListb
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:_ZL27_fetchInitializingClassListb
 }
