@@ -1322,6 +1322,23 @@ else
 fi
 
 #----------------------------------------------------------------------------
+# Where to install gdb scripts, defaults to VG_LIBDIR (pkglibexecdir)
+#----------------------------------------------------------------------------
+AC_MSG_CHECKING([where gdb scripts are installed])
+AC_ARG_WITH(gdbscripts-dir,
+   [  --with-gdbscripts-dir=PATH  Specify path to install gdb scripts],
+   [gdbscriptsdir=${withval}],
+   [gdbscriptsdir=${libexecdir}/valgrind])
+AC_MSG_RESULT([$gdbscriptsdir])
+if test "x$gdbscriptsdir" != "xno"; then
+  AC_SUBST(VG_GDBSCRIPTS_DIR, [$gdbscriptsdir])
+  AM_CONDITIONAL(GDBSCRIPTS, true)
+else
+  AC_SUBST(VG_GDBSCRIPTS_DIR, [])
+  AM_CONDITIONAL(GDBSCRIPTS, false)
+fi
+
+#----------------------------------------------------------------------------
 # Libc and suppressions
 #----------------------------------------------------------------------------
 # This variable will collect the suppression files to be used.
