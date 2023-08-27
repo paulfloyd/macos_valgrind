@@ -4607,6 +4607,27 @@ PRE(sys__umtx_op)
                     struct umtx_robust_lists_params *, obj, int, op, unsigned long, flags);
       PRE_MEM_READ( "_umtx_op_robust_lists(mutex)", ARG3, sizeof(struct vki_umtx_robust_lists_params) );
       break;
+#if (FREEBSD_VERS >= FREEBSD_14)
+   case VKI_UMTX_OP_GET_MIN_TIMEOUT:
+      PRINT( "sys__umtx_op ( GET_MIN_TIMEOUT, %#" FMT_REGWORD "x)", ARG4);
+      // bit of a pain just reads args 2 and 4
+      if (VG_(tdict).track_pre_reg_read) {
+            PRRSN;
+            PRA2("_umtx_op_get_min_timeout",int,op);
+            PRA4("_umtx_op_get_min_timeout",long int*,timeout);
+      }
+      PRE_MEM_WRITE( "_umtx_op_get_min_timout(uaddr)", ARG4, sizeof(long int) );
+      break;
+   case VKI_UMTX_OP_SET_MIN_TIMEOUT:
+      PRINT( "sys__umtx_op ( SET_MIN_TIMEOUT, %" FMT_REGWORD "u)", ARG3);
+      // bit of a pain just reads args 2 and 3
+      if (VG_(tdict).track_pre_reg_read) {
+            PRRSN;
+            PRA2("_umtx_op_set_min_timeout",int,op);
+            PRA3("_umtx_op_set_min_timeout",unsigned long,timeout);
+      }
+      break;
+#endif
    default:
       VG_(umsg)("WARNING: _umtx_op unsupported value.\n");
       PRINT( "sys__umtx_op ( %#" FMT_REGWORD "x, %" FMT_REGWORD "u(UNKNOWN), %" FMT_REGWORD "u, %#" FMT_REGWORD "x, %#" FMT_REGWORD "x )", ARG1, ARG2, ARG3, ARG4, ARG5);
@@ -4673,6 +4694,14 @@ POST(sys__umtx_op)
       break;
    case VKI_UMTX_OP_SHM:
    case VKI_UMTX_OP_ROBUST_LISTS:
+      break;
+#if (FREEBSD_VERS >= FREEBSD_14)
+   case VKI_UMTX_OP_GET_MIN_TIMEOUT:
+      POST_MEM_WRITE( ARG4, sizeof(long int) );
+      break;
+   case VKI_UMTX_OP_SET_MIN_TIMEOUT:
+      break;
+#endif
    default:
       break;
    }
@@ -4957,7 +4986,7 @@ PRE(sys_sctp_generic_recvmsg)
 
    if (ARG4 != (Addr)NULL) {
       ML_(buf_and_len_pre_check) (tid, ARG4, ARG5,
-		                  "sctp_generic_recvmsg(from)",
+                        "sctp_generic_recvmsg(from)",
                         "sctp_generic_recvmsg(fromlen_in)");
    }
 
@@ -5645,6 +5674,8 @@ PRE(sys_cap_enter)
          "         Please consider disabling capability by using the RUNNING_ON_VALGRIND mechanism.\n"
          "         See http://valgrind.org/docs/manual/manual-core-adv.html#manual-core-adv.clientreq\n");
    }
+   /* now complete loading debuginfo since it is not allowed after entering cap mode */
+   VG_(load_all_debuginfo)();
 }
 
 // SYS_cap_getmode   517
@@ -6124,15 +6155,15 @@ PRE(sys_ppoll)
                  struct vki_pollfd *, fds, unsigned int, nfds,
                  struct vki_timespec *, timeout, vki_sigset_t *, newsigmask);
 
-   if (ML_(safe_to_deref)(fds, ARG2*sizeof(struct vki_pollfd))) {
-      for (i = 0; i < ARG2; i++) {
-         PRE_MEM_READ( "ppoll(fds.fd)",
-                       (Addr)(&fds[i].fd), sizeof(fds[i].fd) );
+   for (i = 0; i < ARG2; i++) {
+      PRE_MEM_READ( "ppoll(fds.fd)",
+                    (Addr)(&fds[i].fd), sizeof(fds[i].fd) );
+      if (ML_(safe_to_deref)(&fds[i].fd, sizeof(fds[i].fd)) && fds[i].fd >= 0) {
          PRE_MEM_READ( "ppoll(fds.events)",
                        (Addr)(&fds[i].events), sizeof(fds[i].events) );
-         PRE_MEM_WRITE( "ppoll(fds.revents)",
-                        (Addr)(&fds[i].revents), sizeof(fds[i].revents) );
       }
+      PRE_MEM_WRITE( "ppoll(fds.revents)",
+                     (Addr)(&fds[i].revents), sizeof(fds[i].revents) );
    }
 
    if (ARG3) {

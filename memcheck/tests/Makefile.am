@@ -118,6 +118,7 @@ EXTRA_DIST = \
 	bug340392.stderr.exp bug340392.vgtest \
 	bug464969_d_demangle.stderr.exp bug464969_d_demangle.vgtest \
 		bug464969_d_demangle.stdout.exp \
+	bug472219.stderr.exp bug472219.vgtest \
 	calloc-overflow.stderr.exp calloc-overflow.vgtest\
 	cdebug_zlib.stderr.exp cdebug_zlib.vgtest \
 	cdebug_zlib_gnu.stderr.exp cdebug_zlib_gnu.vgtest \
@@ -141,7 +142,6 @@ EXTRA_DIST = \
 	custom-overlap.stderr.exp custom-overlap.vgtest \
 	cxx17_aligned_new.stderr.exp cxx17_aligned_new.vgtest \
 		cxx17_aligned_new.stderr.exp_32 \
-		cxx17_aligned_new.stderr.exp-solaris \
 		cxx17_aligned_new.stdout.exp \
 	sized_aligned_new_delete_args.stderr.exp \
 		sized_aligned_new_delete_args.vgtest \
@@ -415,6 +415,7 @@ check_PROGRAMS = \
 	bug287260 \
 	bug340392 \
 	bug464969_d_demangle \
+	bug472219 \
 	calloc-overflow \
 	client-msg \
 	clientperm \
@@ -566,6 +567,7 @@ leak_cpp_interior_SOURCES	= leak_cpp_interior.cpp
 accounting_CFLAGS	= $(AM_CFLAGS) @FLAG_W_NO_ALLOC_SIZE_LARGER_THAN@
 badfree_CFLAGS		= $(AM_CFLAGS) @FLAG_W_NO_FREE_NONHEAP_OBJECT@
 bug155125_CFLAGS	= $(AM_CFLAGS) -Wno-unused-result @FLAG_W_NO_ALLOC_SIZE_LARGER_THAN@
+bug472219_CFLAGS	= $(AM_CFLAGS) @FLAG_W_NO_UNINITIALIZED@
 mallinfo_CFLAGS		= $(AM_CFLAGS) -Wno-deprecated-declarations
 malloc3_CFLAGS		= $(AM_CFLAGS) @FLAG_W_NO_ALLOC_SIZE_LARGER_THAN@
 sbfragment_CFLAGS	= $(AM_CFLAGS) -Wno-deprecated-declarations
@@ -583,6 +585,11 @@ sized_aligned_new_delete_args_SOURCES = sized_aligned_new_delete_args.cpp
 sized_aligned_new_delete_args_CXXFLAGS = ${AM_CXXFLAGS} -std=c++17
 sized_aligned_new_delete_misaligned_SOURCES = sized_aligned_new_delete_misaligned.cpp
 sized_aligned_new_delete_misaligned_CXXFLAGS = ${AM_CXXFLAGS} -std=c++17
+if COMPILER_IS_CLANG
+cxx17_aligned_new_CXXFLAGS += -fsized-deallocation
+sized_aligned_new_delete_args_CXXFLAGS += -fsized-deallocation
+sized_aligned_new_delete_misaligned_CXXFLAGS += -fsized-deallocation
+endif
 endif
 
 demangle_SOURCES = demangle.cpp
@@ -663,6 +670,7 @@ reach_thread_register_LDADD	= -lpthread
 
 realloc_size_zero_CFLAGS	= $(AM_CFLAGS) @FLAG_W_NO_INCOMPATIBLE_POINTER_TYPES_DISCARDS_QUALIFIERS@
 realloc_size_zero_mismatch_SOURCES = realloc_size_zero_mismatch.cpp
+realloc_size_zero_mismatch_CXXFLAGS = $(AM_CXXFLAGS) @FLAG_W_NO_MISMATCHED_NEW_DELETE@
 
 resvn_stack_CFLAGS      = $(AM_CFLAGS) @FLAG_W_NO_UNINITIALIZED@
 
