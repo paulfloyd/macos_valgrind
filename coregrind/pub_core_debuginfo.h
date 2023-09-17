@@ -82,6 +82,8 @@ extern ULong VG_(di_notify_dsc)( const HChar* path, Addr header, SizeT len );
 
 extern void VG_(addr_load_di)( Addr a );
 
+extern void VG_(di_load_di)( DebugInfo *di );
+
 extern void VG_(load_di)( DebugInfo *di, Addr a );
 
 extern void VG_(di_discard_ALL_debuginfo)( void );

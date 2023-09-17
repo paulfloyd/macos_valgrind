@@ -3455,8 +3455,8 @@ POST(sys_getresgid)
 // int kqueue(void);
 PRE(sys_kqueue)
 {
-   PRINT("%s", "sys_kqueue ()");
-   PRE_REG_READ0(omt, "kqueue");
+   PRINT("%s", "sys_kqueue(void)");
+   PRE_REG_READ0(int, "kqueue");
 }
 
 POST(sys_kqueue)
@@ -6642,7 +6642,7 @@ POST(sys_shm_open2)
    }
 }
 
-// SYS_sigfastblock
+// SYS_sigfastblock 573
 // int sigfastblock(int cmd, void *ptr);
 PRE(sys_sigfastblock)
 {
@@ -6672,6 +6672,82 @@ POST(sys___realpathat)
    POST_MEM_WRITE((Addr)ARG3, ARG4);
 }
 
+#endif
+
+#if (FREEBSD_VERS >= FREEBSD_12_2)
+
+// SYS_sys_close_range   575
+// int close_range(close_range(u_int lowfd, u_int highfd, int flags);
+PRE(sys_close_range)
+{
+   SysRes res = VG_(mk_SysRes_Success)(0);
+   unsigned int lowfd = ARG1;
+   unsigned int fd_counter; // will count from lowfd to highfd
+   unsigned int highfd = ARG2;
+
+   /* on linux the may lock if futexes are used
+    * there is a lock in the kernel but I assume it's just
+    * a spinlock */
+   PRINT("sys_close_range ( %" FMT_REGWORD "u, %" FMT_REGWORD "u, %"
+         FMT_REGWORD "d )", ARG1, ARG2, SARG3);
+   PRE_REG_READ3(int, "close_range",
+                 unsigned int, lowfd, unsigned int, highfd,
+                 int, flags);
+
+   if (lowfd > highfd) {
+      SET_STATUS_Failure( VKI_EINVAL );
+      return;
+   }
+
+   if (highfd >= VG_(fd_hard_limit))
+      highfd = VG_(fd_hard_limit) - 1;
+
+   if (lowfd > highfd) {
+      SET_STATUS_Success ( 0 );
+      return;
+   }
+
+   fd_counter = lowfd;
+   do {
+      if (fd_counter > highfd
+          || (fd_counter == 2U/*stderr*/ && VG_(debugLog_getLevel)() > 0)
+          || fd_counter == VG_(log_output_sink).fd
+          || fd_counter == VG_(xml_output_sink).fd) {
+         /* Split the range if it contains a file descriptor we're not
+          * supposed to close. */
+         if (fd_counter - 1 >= lowfd) {
+            res = VG_(do_syscall3)(__NR_close_range, (UWord)lowfd, (UWord)fd_counter - 1, ARG3 );
+         }
+         lowfd = fd_counter + 1;
+      }
+   } while (fd_counter++ <= highfd);
+
+   /* If it failed along the way, it's presumably the flags being wrong. */
+   SET_STATUS_from_SysRes (res);
+}
+
+POST(sys_close_range)
+{
+   unsigned int fd;
+   unsigned int last = ARG2;
+
+   if (!VG_(clo_track_fds)
+       || (ARG3 & VKI_CLOSE_RANGE_CLOEXEC) != 0)
+      return;
+
+   if (last >= VG_(fd_hard_limit))
+      last = VG_(fd_hard_limit) - 1;
+
+   for (fd = ARG1; fd <= last; fd++)
+      if ((fd != 2/*stderr*/ || VG_(debugLog_getLevel)() == 0)
+          && fd != VG_(log_output_sink).fd
+          && fd != VG_(xml_output_sink).fd)
+         ML_(record_fd_close)(fd);
+}
+#endif
+
+#if (FREEBSD_VERS >= FREEBSD_13_0)
+
 // SYS___specialfd 577
 // syscalls.master
 // int __specialfd(int type,
@@ -6693,11 +6769,119 @@ PRE(sys___specialfd)
 // int swapoff(const char *special, u_int flags);
 PRE(sys_swapoff)
 {
-   PRINT("sys_swapoff ( %#" FMT_REGWORD "x(%s), %" FMT_REGWORD "u )", ARG1,(char *)ARG1, ARG2);
+   PRINT("sys_swapoff(%#" FMT_REGWORD "x(%s), %" FMT_REGWORD "u)", ARG1,(char *)ARG1, ARG2);
    PRE_REG_READ2(int, "swapoff", const char *, special, u_int, flags);
    PRE_MEM_RASCIIZ( "swapoff(special)", ARG1 );
 }
 
+#endif
+
+#if (FREEBSD_VERS >= FREEBSD_15)
+
+// SYS_kqueuex 583
+// int kqueuex(u_int flags);
+PRE(sys_kqueuex)
+{
+   PRINT("sys_kqueuex(%#" FMT_REGWORD "x)", ARG1);
+   PRE_REG_READ1(int, "kqueuex", u_int, flags);
+}
+
+POST(sys_kqueuex)
+{
+   if (!ML_(fd_allowed)(RES, "kqueuex", tid, True)) {
+      VG_(close)(RES);
+      SET_STATUS_Failure(VKI_EMFILE);
+   } else {
+      if (VG_(clo_track_fds)) {
+         ML_(record_fd_open_nameless)(tid, RES);
+      }
+   }
+}
+
+// SYS_membarrier 584
+// syscalls.master
+// int membarrier(int cmd, unsigned flags, int cpu_id);
+PRE(sys_membarrier)
+{
+   // cmd is signed int but the constants in the headers
+   // are hex so print in hex
+   PRINT("sys_membarrier(%#" FMT_REGWORD "x, %#" FMT_REGWORD "x, %" FMT_REGWORD "d)",
+         ARG1, ARG2, SARG3);
+   PRE_REG_READ3(int, "membarrier", int, cmd, unsigned, flags, int, cpu_id);
+}
+
+// SYS_timerfd_create 585
+// int timerfd_create(int clockid, int flags);
+PRE(sys_timerfd_create)
+{
+   PRINT("sys_timerfd_create (%ld, %ld )", SARG1, SARG2);
+   PRE_REG_READ2(int, "timerfd_create", int, clockid, int, flags);
+}
+
+POST(sys_timerfd_create)
+{
+   if (!ML_(fd_allowed)(RES, "timerfd_create", tid, True)) {
+      VG_(close)(RES);
+      SET_STATUS_Failure( VKI_EMFILE );
+   } else {
+      if (VG_(clo_track_fds))
+         ML_(record_fd_open_nameless) (tid, RES);
+   }
+}
+
+// SYS_timerfd_gettime 586
+// int timerfd_gettime(int fd, struct itimerspec *curr_value);
+PRE(sys_timerfd_gettime)
+{
+   PRINT("sys_timerfd_gettime ( %ld, %#" FMT_REGWORD "x )", SARG1, ARG2);
+   PRE_REG_READ2(int, "timerfd_gettime",
+                 int, fd,
+                 struct vki_itimerspec*, curr_value);
+   if (!ML_(fd_allowed)(ARG1, "timerfd_gettime", tid, False))
+      SET_STATUS_Failure(VKI_EBADF);
+   else
+      PRE_MEM_WRITE("timerfd_gettime(curr_value)",
+                    ARG2, sizeof(struct vki_itimerspec));
+}
+
+POST(sys_timerfd_gettime)
+{
+   if (RES == 0)
+      POST_MEM_WRITE(ARG2, sizeof(struct vki_itimerspec));
+}
+
+// SYS_timerfd_gettime 587
+// int timerfd_settime(int fd, int flags, const struct itimerspec *new_value,
+//                     struct itimerspec *old_value);
+PRE(sys_timerfd_settime)
+{
+   PRINT("sys_timerfd_settime(%" FMT_REGWORD "d, %" FMT_REGWORD "d, %#" FMT_REGWORD "x, %#"
+         FMT_REGWORD "x )", SARG1, SARG2, ARG3, ARG4);
+   PRE_REG_READ4(int, "timerfd_settime",
+                 int, fd,
+                 int, flags,
+                 const struct vki_itimerspec*, new_value,
+                 struct vki_itimerspec*, old_value);
+   if (!ML_(fd_allowed)(ARG1, "timerfd_settime", tid, False))
+      SET_STATUS_Failure(VKI_EBADF);
+   else
+   {
+      PRE_MEM_READ("timerfd_settime(new_value)",
+                   ARG3, sizeof(struct vki_itimerspec));
+      if (ARG4)
+      {
+         PRE_MEM_WRITE("timerfd_settime(old_value)",
+                       ARG4, sizeof(struct vki_itimerspec));
+      }
+   }
+}
+
+POST(sys_timerfd_settime)
+{
+   if (RES == 0 && ARG4 != 0) {
+      POST_MEM_WRITE(ARG4, sizeof(struct vki_itimerspec));
+   }
+}
 #endif
 
 #undef PRE
@@ -7402,7 +7586,7 @@ const SyscallTableEntry ML_(syscall_table)[] = {
    BSDX_(__NR_sigfastblock,     sys_sigfastblock),      // 573
    BSDXY( __NR___realpathat,    sys___realpathat),      // 574
 #endif
-   // unimpl __NR_close_range         575
+   BSDXY(__NR_close_range,      sys_close_range),       // 575
 #endif
 
 #if (FREEBSD_VERS >= FREEBSD_13_0)
@@ -7417,6 +7601,15 @@ const SyscallTableEntry ML_(syscall_table)[] = {
    // unimpl __NR_sched_getcpu        581
    BSDX_(__NR_swapoff,          sys_swapoff),           // 582
 #endif
+
+#if (FREEBSD_VERS >= FREEBSD_15)
+   BSDXY(__NR_kqueuex,          sys_kqueuex),           // 583
+   BSDX_(__NR_membarrier,       sys_membarrier),        // 584
+   BSDXY(__NR_timerfd_create,   sys_timerfd_create),    // 585
+   BSDXY(__NR_timerfd_settime,  sys_timerfd_settime),   // 586
+   BSDXY(__NR_timerfd_gettime,  sys_timerfd_gettime),   // 587
+#endif
+
 
    BSDX_(__NR_fake_sigreturn,   sys_fake_sigreturn),    // 1000, fake sigreturn
 
