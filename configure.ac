@@ -548,6 +548,7 @@ case "${host_os}" in
         AC_DEFINE([XCODE_11_0], 110000, [XCODE_VERS value for Xcode 11.0])
         AC_DEFINE([XCODE_12_0], 120000, [XCODE_VERS value for Xcode 12.0])
         AC_DEFINE([XCODE_13_0], 130000, [XCODE_VERS value for Xcode 13.0])
+        AC_DEFINE([XCODE_14_0], 140000, [XCODE_VERS value for Xcode 14.0])
 
         # Substitute the Xcode include path detected earlier
         AC_SUBST(XCODE_INC_DIR, [$xcodedir_inc])
@@ -685,6 +686,9 @@ case "${host_os}" in
               ;;
             13.*)
               AC_DEFINE([XCODE_VERS], XCODE_13_0, [Xcode version])
+              ;;
+            14.*)
+              AC_DEFINE([XCODE_VERS], XCODE_14_0, [Xcode version])
               ;;
             *)
               AC_MSG_RESULT([unsupported (${xcodeversion})])
