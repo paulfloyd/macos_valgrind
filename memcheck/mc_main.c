@@ -7285,6 +7285,12 @@ static Bool mc_handle_client_request ( ThreadId tid, UWord* arg, UWord* ret )
             MC_(record_bad_alignment) ( tid, aligned_alloc_info->orig_alignment , 0U, " (should be non-zero and a power of 2)" );
          }
          break;
+      case AllocKindDeleteDefault:
+         mc = VG_(HT_lookup) ( MC_(malloc_list), (UWord)aligned_alloc_info->mem );
+         if (mc && mc->alignB) {
+            MC_(record_align_mismatch_error) ( tid, mc, 0U, True, "new/delete");
+         }
+         break;
       case AllocKindDeleteAligned:
          if (aligned_alloc_info->orig_alignment == 0 ||
              (aligned_alloc_info->orig_alignment & (aligned_alloc_info->orig_alignment - 1)) != 0) {
@@ -7292,7 +7298,13 @@ static Bool mc_handle_client_request ( ThreadId tid, UWord* arg, UWord* ret )
          }
          mc = VG_(HT_lookup) ( MC_(malloc_list), (UWord)aligned_alloc_info->mem );
          if (mc && aligned_alloc_info->orig_alignment != mc->alignB) {
-            MC_(record_align_mismatch_error) ( tid, mc, aligned_alloc_info->orig_alignment, "new/delete");
+            MC_(record_align_mismatch_error) ( tid, mc, aligned_alloc_info->orig_alignment, False, "new/delete");
+         }
+         break;
+      case AllocKindVecDeleteDefault:
+         mc = VG_(HT_lookup) ( MC_(malloc_list), (UWord)aligned_alloc_info->mem );
+         if (mc && mc->alignB) {
+            MC_(record_align_mismatch_error) ( tid, mc, 0U, True, "new[]/delete[]");
          }
          break;
       case AllocKindVecDeleteAligned:
@@ -7302,7 +7314,7 @@ static Bool mc_handle_client_request ( ThreadId tid, UWord* arg, UWord* ret )
          }
          mc = VG_(HT_lookup) ( MC_(malloc_list), (UWord)aligned_alloc_info->mem );
          if (mc && aligned_alloc_info->orig_alignment != mc->alignB) {
-            MC_(record_align_mismatch_error) ( tid, mc, aligned_alloc_info->orig_alignment, "new[]/delete[]");
+            MC_(record_align_mismatch_error) ( tid, mc, aligned_alloc_info->orig_alignment, False, "new[]/delete[]");
          }
          break;
       case AllocKindDeleteSizedAligned:
@@ -7311,7 +7323,7 @@ static Bool mc_handle_client_request ( ThreadId tid, UWord* arg, UWord* ret )
             MC_(record_size_mismatch_error) ( tid, mc, aligned_alloc_info->size, "new/delete");
          }
          if (mc && aligned_alloc_info->orig_alignment != mc->alignB) {
-            MC_(record_align_mismatch_error) ( tid, mc, aligned_alloc_info->orig_alignment, "new/delete");
+            MC_(record_align_mismatch_error) ( tid, mc, aligned_alloc_info->orig_alignment, False, "new/delete");
          }
          if (aligned_alloc_info->orig_alignment == 0 ||
              (aligned_alloc_info->orig_alignment & (aligned_alloc_info->orig_alignment - 1)) != 0) {
@@ -7324,7 +7336,7 @@ static Bool mc_handle_client_request ( ThreadId tid, UWord* arg, UWord* ret )
             MC_(record_size_mismatch_error) ( tid, mc, aligned_alloc_info->size, "new[]/delete[]" );
          }
          if (mc && aligned_alloc_info->orig_alignment != mc->alignB) {
-            MC_(record_align_mismatch_error) ( tid, mc, aligned_alloc_info->orig_alignment, "new[]/delete[]");
+            MC_(record_align_mismatch_error) ( tid, mc, aligned_alloc_info->orig_alignment, False, "new[]/delete[]");
          }
          if (aligned_alloc_info->orig_alignment == 0 ||
              (aligned_alloc_info->orig_alignment & (aligned_alloc_info->orig_alignment - 1)) != 0) {
