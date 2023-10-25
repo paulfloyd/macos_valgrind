@@ -473,16 +473,16 @@ Addr setup_client_stack( void*  init_sp,
 
    /* --- executable_path + NULL --- */
    if (info->executable_path) {
-#if (XCODE_VERS < XCODE_10_14_6)
-       *ptr++ = (Addr)copy_str(&strtab, info->executable_path);
+#if XCODE_VERS >= XCODE_10_14_6
+       Int executable_path_len = VG_(strlen)(info->executable_path) + executable_path_length + 1;
+       HChar *executable_path = VG_(malloc)("initimg-darwin.scs.1", executable_path_len);
+       VG_(snprintf)(executable_path, executable_path_len, "executable_path=%s", info->executable_path);
+       *ptr++ = (Addr)copy_str(&strtab, executable_path);
+       VG_(free)(executable_path);
 #else
-       HChar tmp[PATH_MAX+executable_path_length+1];
-       tmp[0] = '\0';
-       VG_(strcat)(tmp, executable_path);
-       VG_(strcat)(tmp, info->executable_path);
-       *ptr++ = (Addr)copy_str(&strtab, tmp);
+       *ptr++ = (Addr)copy_str(&strtab, info->executable_path);
 #endif
-   } else {
+   } else
        *ptr++ = 0;
    }
    *ptr++ = 0;
