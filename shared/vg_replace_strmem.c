@@ -1137,8 +1137,15 @@ STRNCPY(libsystemZucZddylib, __strncpy_chk)
 #define MEMMOVE(soname, fnname)  \
    MEMMOVE_OR_MEMCPY(20181, soname, fnname, 0)
 
-#define MEMCPY(soname, fnname) \
+/* See https://bugs.kde.org/show_bug.cgi?id=402833
+   why we disable the overlap check on x86_64.  */
+#if defined(VGP_amd64_linux)
+ #define MEMCPY(soname, fnname) \
+   MEMMOVE_OR_MEMCPY(20180, soname, fnname, 0)
+#else
+ #define MEMCPY(soname, fnname) \
    MEMMOVE_OR_MEMCPY(20180, soname, fnname, 1)
+#endif
 
 #if defined(VGO_linux)
  /* For older memcpy we have to use memmove-like semantics and skip
@@ -1713,6 +1720,14 @@ STRNCPY(libsystemZucZddylib, __strncpy_chk)
 
 /*-------------------- memcpy_chk --------------------*/
 
+/* See https://bugs.kde.org/show_bug.cgi?id=402833
+   why we disable the overlap check on x86_64.  */
+#if defined(VGP_amd64_linux)
+ #define CHECK_OVERLAP 0
+#else
+ #define CHECK_OVERLAP 1
+#endif
+
 #define GLIBC26___MEMCPY_CHK(soname, fnname) \
    void* VG_REPLACE_FUNCTION_EZU(20300,soname,fnname) \
             (void* dst, const void* src, SizeT len, SizeT dstlen ); \
@@ -1726,7 +1741,7 @@ STRNCPY(libsystemZucZddylib, __strncpy_chk)
       RECORD_COPY(len); \
       if (len == 0) \
          return dst; \
-      if (is_overlap(dst, src, len, len)) \
+      if (CHECK_OVERLAP && is_overlap(dst, src, len, len)) \
          RECORD_OVERLAP_ERROR("memcpy_chk", dst, src, len); \
       if ( dst > src ) { \
          d = (HChar *)dst + len - 1; \
