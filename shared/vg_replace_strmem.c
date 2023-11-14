@@ -370,7 +370,7 @@ static inline void my_exit ( int x )
       if (is_overlap(dst_orig,  \
                      src_orig,  \
                      (Addr)dst-(Addr)dst_orig+1, \
-                     (Addr)src-(Addr)src_orig+1)) \
+                     (Addr)src-(Addr)src_orig)) \
          RECORD_OVERLAP_ERROR("strncat", dst_orig, src_orig, n); \
       \
       return dst_orig; \
@@ -434,6 +434,7 @@ static inline void my_exit ( int x )
    }
 
 #if defined(VGO_linux)
+ STRLCAT(VG_Z_LIBC_SONAME,   strlcat)
 
 #elif defined(VGO_freebsd)
  STRLCAT(VG_Z_LD_ELF_SO_1,   strlcat)
@@ -669,11 +670,8 @@ STRNCPY(libsystemZucZddylib, __strncpy_chk)
 
 #if defined(VGO_linux)
 
-#if defined(VGPV_arm_linux_android) || defined(VGPV_x86_linux_android) \
-    || defined(VGPV_mips32_linux_android)
  #define STRLCPY_CHECK_FOR_DSTSIZE_ZERO
  STRLCPY(VG_Z_LIBC_SONAME, strlcpy);
-#endif
 
 #elif defined(VGO_freebsd)
  #define STRLCPY_CHECK_FOR_DSTSIZE_ZERO
@@ -1010,6 +1008,10 @@ STRNCPY(libsystemZucZddylib, __strncpy_chk)
   /* _platform_memchr$VARIANT$Haswell */
   MEMCHR(libsystemZuplatformZddylib, _platform_memchr$VARIANT$Haswell)
 # endif
+# if DARWIN_VERS >= DARWIN_10_12
+  /* _platform_memchr$VARIANT$Base */
+  MEMCHR(libsystemZuplatformZddylib, _platform_memchr$VARIANT$Base)
+#endif
 
 #elif defined(VGO_solaris)
  MEMCHR(VG_Z_LIBC_SONAME, memchr)
