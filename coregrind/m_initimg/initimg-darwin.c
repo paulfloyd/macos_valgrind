@@ -483,7 +483,7 @@ Addr setup_client_stack( void*  init_sp,
 #else
        *ptr++ = (Addr)copy_str(&strtab, info->executable_path);
 #endif
-   } else
+   } else {
        *ptr++ = 0;
    }
    *ptr++ = 0;
