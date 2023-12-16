@@ -203,3 +203,73 @@
    fun:___ZNK5dyld39MachOFile14forEachSectionEU13block_pointerFvRKNS0_11SectionInfoEbRbE_block_invoke
    fun:_ZNK5dyld39MachOFile18forEachLoadCommandER11DiagnosticsU13block_pointerFvPK12load_commandRbE
 }
+{
+   OSX1300:xpc_dictionary_get_uint64
+   Memcheck:Addr16
+   obj:*
+   fun:_xpc_dictionary_look_up_table
+}
+{
+   OSX1300:bootstrap_look_up3
+   Memcheck:Cond
+   fun:_xpc_interface_routine
+}
+{
+   OSX1300:notify_monitor_file
+   Memcheck:Cond
+   fun:_notify_fork_child
+}
+{
+   OSX1300:notify_register_check1
+   Memcheck:Cond
+   fun:notify_register_check
+   fun:__si_module_static_ds_block_invoke
+}
+{
+   OSX1300:notify_register_check2
+   Memcheck:Cond
+   fun:notify_register_check
+   fun:si_inet_config
+   fun:_mdns_search_ex
+}
+{
+   OSX1300:si_module1
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:*alloc
+   ... 
+   fun:__si_module_static_*_block_invoke
+}
+{
+   OSX1300:si_module2
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:si_module_config_modules_for_category
+}
+{
+   OSX1300:n_notify_fork_child
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   fun:_notify_fork_child
+}
+{
+   OSX1300:ConectToServer
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:ConnectToServer
+   fun:DNSServiceCreateConnection
+   fun:_mdns_search_ex
+}
+{
+   OSX1300:printf1
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:__smakebuf
+   fun:__swsetup
+   fun:__v2printf
+   fun:vfprintf_l
+}
