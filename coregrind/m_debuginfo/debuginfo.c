@@ -1403,7 +1403,7 @@ ULong VG_(di_notify_mmap)( Addr a, Bool allow_SkFileV, Int use_fd )
    }
    if (sr_Res(preadres) == 0)
       return 0;
-   vg_assert(sr_Res(preadres) > 0 && sr_Res(preadres) <= sizeof(buf1k) );
+   vg_assert(sr_Res(preadres) > 0 && sr_Res(preadres) <= sizeof(buf4k) );
 
    rw_load_count = 0;
 
