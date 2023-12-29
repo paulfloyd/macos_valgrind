@@ -1929,11 +1929,12 @@ ULong VG_(di_notify_dsc)( const HChar* filename, Addr header, SizeT len )
 {
    DebugInfo* di;
    const Bool       debug = VG_(debugLog_getLevel)() >= 3;
+   Int rw_count = 0;
 
    if (debug)
       VG_(dmsg)("di_notify_dsc-1: %s\n", filename);
 
-   if (!ML_(is_macho_object_file)( (const void*) header, len ))
+   if (!ML_(check_macho_and_get_rw_loads)( (const void*) header, len, &rw_count ))
       return 0;
 
    /* See if we have a DebugInfo for this filename.  If not,
