@@ -83,5 +83,7 @@ $SED '/Warning: set address range perms: large range/d' |
 $SED '/^run: \/usr\/bin\/dsymutil.*/d' |
 
 # Suppress Darwin dyld errors
-$SED '/^used_suppression:.*OSX.*dyld.*default.supp:*/d'
+$SED '/^used_suppression:.*OSX.*dyld.*default.supp:*/d' |
 
+# Suppress Darwin dyld errors
+$SED '/^used_suppression:.*OSX.*dyld.*default.supp:*/d'
