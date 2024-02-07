@@ -76,6 +76,8 @@ EXTRA_DIST = \
 	memalign_supp.supp \
 	misc.vgtest \
 	misc.stderr.exp \
+	openpty.vgtest \
+	openpty.stderr.exp \
 	pdfork_pdkill.vgtest \
 	pdfork_pdkill.stderr.exp \
 	realpathat.vgtest \
@@ -136,7 +138,7 @@ EXTRA_DIST = \
 	utimes.stderr.exp
 
 check_PROGRAMS = \
-	access aio aiov aio_read aligned_alloc bug464476 bug470713 \
+	access aio aio_read aligned_alloc bug464476 bug470713 \
 	capsicum chflags \
 	chmod_chown delete_sized_mismatch errno_aligned_allocs \
 	extattr \
@@ -144,6 +146,7 @@ check_PROGRAMS = \
 	file_locking_wait6 \
 	get_set_context get_set_login getfh \
 	kqueue linkat memalign misc \
+	openpty \
 	pdfork_pdkill getfsstat inlinfo inlinfo_nested.so \
 	revoke scalar \
 	scalar_fork scalar_thr_exit scalar_abort2 scalar_pdfork \
@@ -161,6 +164,10 @@ check_PROGRAMS = \
 
 AM_CFLAGS   += $(AM_FLAG_M3264_PRI)
 AM_CXXFLAGS += $(AM_FLAG_M3264_PRI)
+
+if HAVE_AIO_READV
+check_PROGRAMS += aiov
+endif
 
 inlinfo_SOURCES = inlinfo.c
 inlinfo_DEPENDENCIES = inlinfo_nested.so
@@ -188,9 +195,9 @@ if HAVE_CLOSE_RANGE
 check_PROGRAMS += close_range
 endif
 
-scalar_CFLAGS = ${AM_CFLAGS} -g
-
 aligned_alloc_CFLAGS = ${AM_CFLAGS} @FLAG_W_NO_NON_POWER_OF_TWO_ALIGNMENT@
+
+close_range_CFLAGS = ${AM_CFLAGS} @FLAG_W_NO_UNUSED_BUT_SET_VARIABLE@
 
 delete_sized_mismatch_CXXFLAGS = ${AM_CXXFLAGS} --std=c++14
 delete_sized_mismatch_SOURCES = delete_sized_mismatch.cpp
@@ -200,3 +207,7 @@ errno_aligned_allocs_CFLAGS = ${AM_CFLAGS} @FLAG_W_NO_NON_POWER_OF_TWO_ALIGNMENT
 extattr_CFLAGS = ${AM_CFLAGS} @FLAG_W_NO_UNUSED_BUT_SET_VARIABLE@
 
 memalign_CFLAGS = ${AM_CFLAGS} @FLAG_W_NO_NON_POWER_OF_TWO_ALIGNMENT@
+
+openpty_LDFLAGS = ${AM_LDFLAGS} -lutil
+
+scalar_CFLAGS = ${AM_CFLAGS} -g

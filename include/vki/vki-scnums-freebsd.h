@@ -668,16 +668,22 @@
 
 #if (FREEBSD_VERS >= FREEBSD_13_1)
 
+#if (FREEBSD_VERS >= FREEBSD_14)
 #define __NR_fspacectl           580
+#endif
 #define __NR_sched_getcpu        581
 #define __NR_swapoff             582
 
 #endif
 
-#if (FREEBSD_VERS >= FREEBSD_15)
+#if (FREEBSD_VERS >= FREEBSD_15) || (FREEBSD_VERS >= FREEBSD_13_3)
 
 #define __NR_kqueuex             583
 #define __NR_membarrier          584
+
+#endif
+
+#if (FREEBSD_VERS >= FREEBSD_15)
 #define __NR_timerfd_create      585
 #define __NR_timerfd_gettime     586
 #define __NR_timerfd_settime     587
