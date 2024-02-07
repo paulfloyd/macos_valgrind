@@ -138,19 +138,11 @@ else
 fi
 rm $tmpfile
 
-dnl automake-1.10 does not have AM_COND_IF (added in 1.11), so we supply a
-dnl fallback definition
-dnl The macro is courtesy of Dave Hart:
-dnl   https://lists.gnu.org/archive/html/automake/2010-12/msg00045.html
-m4_ifndef([AM_COND_IF], [AC_DEFUN([AM_COND_IF], [
-if test -z "$$1_TRUE"; then :
-  m4_n([$2])[]dnl
-m4_ifval([$3],
-[else
-  $3
-])dnl
-fi[]dnl
-])])
+# Make sure we can compile in C99 mode.
+AC_PROG_CC
+if test "$ac_prog_cc_stdc" = "c99"; then
+    AC_MSG_ERROR([Valgrind relies on a C compiler supporting C99])
+fi
 
 # macOS: Detect the Xcode SDK path and inject it in different tools
 AM_COND_IF([VGCONF_OS_IS_DARWIN],

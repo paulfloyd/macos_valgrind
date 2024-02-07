@@ -11492,13 +11492,13 @@ const SyscallTableEntry ML_(syscall_table)[] = {
 #else
    _____(VG_DARWIN_SYSCALL_CONSTRUCT_UNIX(308)),   // old __pthread_cond_timedwait
 #endif
-// _____(__NR_aio_fsync), 
+// _____(__NR_aio_fsync),
    MACX_(__NR_aio_return,     aio_return),
-   MACX_(__NR_aio_suspend,    aio_suspend), 
-// _____(__NR_aio_cancel), 
-   MACX_(__NR_aio_error,      aio_error), 
-   MACXY(__NR_aio_read,       aio_read), 
-   MACX_(__NR_aio_write,      aio_write), 
+   MACX_(__NR_aio_suspend,    aio_suspend),
+// _____(__NR_aio_cancel),
+   MACX_(__NR_aio_error,      aio_error),
+   MACXY(__NR_aio_read,       aio_read),
+   MACX_(__NR_aio_write,      aio_write),
 // _____(__NR_lio_listio),   // 320
    _____(VG_DARWIN_SYSCALL_CONSTRUCT_UNIX(321)),   // ???
 
@@ -11514,10 +11514,10 @@ const SyscallTableEntry ML_(syscall_table)[] = {
    _____(VG_DARWIN_SYSCALL_CONSTRUCT_UNIX(326)),   // ???
    MACX_(__NR_issetugid,               issetugid), 
    MACX_(__NR___pthread_kill,          __pthread_kill),
-   MACX_(__NR___pthread_sigmask,       __pthread_sigmask), 
+   MACX_(__NR___pthread_sigmask,       __pthread_sigmask),
    MACXY(__NR___sigwait,               __sigwait),  // 330
-   MACX_(__NR___disable_threadsignal,  __disable_threadsignal), 
-   MACX_(__NR___pthread_markcancel,    __pthread_markcancel), 
+   MACX_(__NR___disable_threadsignal,  __disable_threadsignal),
+   MACX_(__NR___pthread_markcancel,    __pthread_markcancel),
    MACX_(__NR___pthread_canceled,      __pthread_canceled),
    MACX_(__NR___semwait_signal,        __semwait_signal), 
    _____(VG_DARWIN_SYSCALL_CONSTRUCT_UNIX(335)),   // old utrace

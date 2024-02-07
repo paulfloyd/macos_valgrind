@@ -134,8 +134,8 @@ static Bool is_sane_CEnt ( const HChar* who, const DiImage* img, UInt i )
    if (!(ce->used <= ce->size)) goto fail;
    if (ce->fromC) {
       // ce->size can be anything, but ce->used must be either the
-      // same or zero, in the case that it hasn't been set yet.  
-      // Similarly, ce->off must either be above the real_size 
+      // same or zero, in the case that it hasn't been set yet.
+      // Similarly, ce->off must either be above the real_size
       // threshold, or zero if it hasn't been set yet.
       if (!(ce->off >= img->real_size || ce->off == 0)) goto fail;
       if (!(ce->off + ce->used <= img->size)) goto fail;
@@ -427,7 +427,7 @@ static Bool parse_Frame_asciiz ( const Frame* fr, const HChar* tag,
 static Bool parse_Frame_le64_le64_le64_bytes (
                const Frame* fr, const HChar* tag,
                /*OUT*/ULong* n1, /*OUT*/ULong* n2, /*OUT*/ULong* n3,
-               /*OUT*/UChar** data, /*OUT*/ULong* n_data 
+               /*OUT*/UChar** data, /*OUT*/ULong* n_data
             )
 {
    vg_assert(VG_(strlen)(tag) == 4);
@@ -576,7 +576,7 @@ static void set_CEnt ( const DiImage* img, UInt entNo, DiOffT off )
       UInt delay = now - t_last;
       t_last = now;
       nread += len;
-      VG_(printf)("XXXXXXXX (tot %'llu)  read %'lu  offset %'llu  delay %'u\n", 
+      VG_(printf)("XXXXXXXX (tot %'llu)  read %'lu  offset %'llu  delay %'u\n",
                   nread, len, off, delay);
    }
 
@@ -669,7 +669,7 @@ static void set_CEnt ( const DiImage* img, UInt entNo, DiOffT off )
      end_of_else_clause:
       {}
    }
-   
+
    ce->off  = off;
    ce->used = len;
    ce->fromC = False;
@@ -869,7 +869,7 @@ DiImage* ML_(img_from_local_file)(const HChar* fullpath)
        || /* size is unrepresentable as a SizeT */
           size != (DiOffT)(SizeT)(size)) {
       VG_(close)(sr_Res(fd));
-      return NULL; 
+      return NULL;
    }
 
    DiImage* img = ML_(dinfo_zalloc)("di.image.ML_iflf.1", sizeof(DiImage));
@@ -998,7 +998,7 @@ DiImage* ML_(img_from_di_server)(const HChar* filename,
    if (!set_blocking(sd))
       return NULL;
    Int one = 1;
-   Int sr = VG_(setsockopt)(sd, VKI_IPPROTO_TCP, VKI_TCP_NODELAY, 
+   Int sr = VG_(setsockopt)(sd, VKI_IPPROTO_TCP, VKI_TCP_NODELAY,
                             &one, sizeof(one));
    vg_assert(sr == 0);
 
