@@ -144,40 +144,6 @@ if test "$ac_prog_cc_stdc" = "c99"; then
     AC_MSG_ERROR([Valgrind relies on a C compiler supporting C99])
 fi
 
-# macOS: Detect the Xcode SDK path and inject it in different tools
-AM_COND_IF([VGCONF_OS_IS_DARWIN],
-[
-  AC_ARG_VAR([DEVELOPER_DIR],[Overrides the active developer directory (used in gcc, xcrun, etc)])
-  AC_CHECK_PROG([XCRUN], [xcrun], [yes], [no])
-
-  AC_MSG_CHECKING([for Xcode SDK and includes])
-  AC_ARG_WITH([xcode-path],
-  [  --with-xcode-path=PATH      Specify path for Xcode SDK],
-  [
-      # Set defaults in case `xcrun` fails
-      xcodedir="$withval"
-      xcodedir_inc="$xcodedir/usr/include"
-      # Defining DEVELOPER_DIR will override which version of gcc, xcrun, etc is being used
-      export DEVELOPER_DIR="$xcodedir"
-  ],
-  [
-      # Use system defaults, in case `xcrun` fails
-      xcodedir="active developer directory"
-      xcodedir_inc="/usr/include"
-  ])
-
-  if test "x$XCRUN" != "xno"; then
-    xcrundir=`xcrun --sdk macosx --show-sdk-path 2>/dev/null`
-    if test ! -z "$xcrundir"; then
-        xcodedir="$xcrundir"
-        xcodedir_inc="$xcodedir/usr/include"
-    fi
-  else
-    AC_MSG_WARN([Couldn't find xcrun, most Xcode-related autodetection will be disabled and the build might fail])
-  fi
-  AC_MSG_RESULT([$xcodedir (includes: $xcodedir_inc)])
-])
-
 # We don't want gcc < 3.0
 AC_MSG_CHECKING([for a supported version of gcc])
 
@@ -1298,6 +1264,41 @@ AM_CONDITIONAL(VGCONF_OS_IS_DARWIN_OR_FREEBSD,
 # there is a secondary target.
 AM_CONDITIONAL(VGCONF_HAVE_PLATFORM_SEC,
                test x$VGCONF_PLATFORM_SEC_CAPS != x)
+
+# macOS: Detect the Xcode SDK path and inject it in different tools
+AM_COND_IF([VGCONF_OS_IS_DARWIN],
+[
+  AC_ARG_VAR([DEVELOPER_DIR],[Overrides the active developer directory (used in gcc, xcrun, etc)])
+  AC_CHECK_PROG([XCRUN], [xcrun], [yes], [no])
+
+  AC_MSG_CHECKING([for Xcode SDK and includes])
+  AC_ARG_WITH([xcode-path],
+  [  --with-xcode-path=PATH      Specify path for Xcode SDK],
+  [
+      # Set defaults in case `xcrun` fails
+      xcodedir="$withval"
+      xcodedir_inc="$xcodedir/usr/include"
+      # Defining DEVELOPER_DIR will override which version of gcc, xcrun, etc is being used
+      export DEVELOPER_DIR="$xcodedir"
+  ],
+  [
+      # Use system defaults, in case `xcrun` fails
+      xcodedir="active developer directory"
+      xcodedir_inc="/usr/include"
+  ])
+
+  if test "x$XCRUN" != "xno"; then
+    xcrundir=`xcrun --sdk macosx --show-sdk-path 2>/dev/null`
+    if test ! -z "$xcrundir"; then
+        xcodedir="$xcrundir"
+        xcodedir_inc="$xcodedir/usr/include"
+    fi
+  else
+    AC_MSG_WARN([Couldn't find xcrun, most Xcode-related autodetection will be disabled and the build might fail])
+  fi
+  AC_MSG_RESULT([$xcodedir (includes: $xcodedir_inc)])
+])
+
 
 #----------------------------------------------------------------------------
 # Inner Valgrind?
