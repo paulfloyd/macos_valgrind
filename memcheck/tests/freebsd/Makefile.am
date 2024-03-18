@@ -3,7 +3,7 @@ include $(top_srcdir)/Makefile.tool-tests.am
 
 dist_noinst_SCRIPTS = filter_stderr filter_pts dump_stdout filter_sigwait \
 	filter_scalar filter_realpathat filter_fstat filter_eventfd2 \
-	toucher1 toucher2
+	toucher1 toucher2 filter_getfsstat filter_context
 
 EXTRA_DIST = \
 	access.vgtest \
@@ -28,6 +28,7 @@ EXTRA_DIST = \
 	bug464476_rel_symlink.stdout.exp \
 	bug470713.vgtest bug470713.stderr.exp \
 		bug470713.stdout.exp \
+	bug483786.vgtest bug483786.stderr.exp \
 	capsicum.vgtest \
 	capsicum.stderr.exp \
 	chflags.vgtest\
@@ -35,7 +36,8 @@ EXTRA_DIST = \
 		chflags.stderr.exp-x86 \
 	chmod_chown.vgtest \
 	chmod_chown.stderr.exp \
-	close_range.vgtest close_range.stderr.exp \
+	clock_nanosleep_interrupt.vgtest \
+	clock_nanosleep_interrupt.stderr.exp \
 	delete_sized_mismatch.vgtest \
 	delete_sized_mismatch.stderr.exp \
 	delete_sized_mismatch_xml.vgtest \
@@ -54,7 +56,6 @@ EXTRA_DIST = \
 	file_locking_wait6.stderr.exp \
 	get_set_context.vgtest \
 	get_set_context.stderr.exp \
-	get_set_context.stderr.exp-x86 \
 	get_set_login.vgtest \
 	get_set_login.stderr.exp \
 	getfh.vgtest \
@@ -139,8 +140,10 @@ EXTRA_DIST = \
 
 check_PROGRAMS = \
 	access aio aio_read aligned_alloc bug464476 bug470713 \
+	bug483786 \
 	capsicum chflags \
-	chmod_chown delete_sized_mismatch errno_aligned_allocs \
+	chmod_chown clock_nanosleep_interrupt \
+	delete_sized_mismatch errno_aligned_allocs \
 	extattr \
 	fexecve \
 	file_locking_wait6 \
@@ -191,13 +194,7 @@ scalar_15_plus_CFLAGS = ${AM_CFLAGS} -g
 timerfd_LDFLAGS = -lm
 endif
 
-if HAVE_CLOSE_RANGE
-check_PROGRAMS += close_range
-endif
-
 aligned_alloc_CFLAGS = ${AM_CFLAGS} @FLAG_W_NO_NON_POWER_OF_TWO_ALIGNMENT@
-
-close_range_CFLAGS = ${AM_CFLAGS} @FLAG_W_NO_UNUSED_BUT_SET_VARIABLE@
 
 delete_sized_mismatch_CXXFLAGS = ${AM_CXXFLAGS} --std=c++14
 delete_sized_mismatch_SOURCES = delete_sized_mismatch.cpp

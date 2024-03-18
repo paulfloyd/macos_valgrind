@@ -25,9 +25,9 @@
 int main(void)
 {
    /* Uninitialised, but we know px[0] is 0x0. */
-   /* PJF why ? */
    long *px = malloc(2*sizeof(long));
    x0 = px[0];
+   const char* running_in_vgtest = getenv("RUNNING_IN_VGTEST");
 
    /* SYS_syscall                 0 */
    /* does this need a specific test? There are two diffeent IDs for syscall, see 198 */
@@ -303,9 +303,11 @@ int main(void)
 
    /* obsol vwrite                68 */
 
+#if (FREEBSD_VERS < FREEBSD_15)
    /* SYS_sbrk                    69 */
    GO(SYS_sbrk, "1s 1m");
    SY(SYS_sbrk, x0); FAIL;
+#endif
 
    /* not implemented on OS SYS_sstk 70 */
 
@@ -554,7 +556,12 @@ int main(void)
 
    /* SYS_setsid                  147 */
    GO(SYS_setsid, "0s 0m");
-   SY(SYS_setsid); SUCC; /* FAIL when run standalone */
+   SY(SYS_setsid);
+   if (running_in_vgtest) {
+       SUCC;
+   } else {
+      FAIL;
+   }
 
    /* SYS_quotactl                148 */
    GO(SYS_quotactl, "(Q_QUOTAOFF) 2s 0m");
@@ -791,8 +798,8 @@ int main(void)
    }
 
    /* SYS_freebsd7___semctl       220 */
-   GO(SYS_freebsd7___semctl, "(IPC_INFO) 4s 1m");
-   SY(SYS_freebsd7___semctl, x0, x0, x0+IPC_INFO, x0+1); FAIL;
+   GO(SYS_freebsd7___semctl, "(IPC_STAT) 4s 1m");
+   SY(SYS_freebsd7___semctl, x0, x0, x0+IPC_STAT, x0+1); FAIL;
 
    GO(SYS_freebsd7___semctl, "(bogus cmd) 3s 0m");
    SY(SYS_freebsd7___semctl, x0, x0, x0-1, x0+1); FAIL;
@@ -890,9 +897,8 @@ int main(void)
 
 #if (FREEBSD_VERS >= FREEBSD_11)
    /* SYS_clock_nanosleep         244 */
-   /* this succeeds ? */
    GO(SYS_clock_nanosleep, "4s 2m");
-   SY(SYS_clock_nanosleep, x0+5000, x0+3000, x0, x0+1); SUCC;
+   SY(SYS_clock_nanosleep, x0+5000, x0+3000, x0+3, x0+1); SUCC;
 #endif
 
    // SYS_clock_getcpuclockid2                             247
@@ -1785,8 +1791,8 @@ int main(void)
 #endif
 
    /* SYS___semctl                510 */
-   GO(SYS___semctl, "(IPC_INFO) 4s 1m");
-   SY(SYS___semctl, x0, x0, x0+IPC_INFO, x0+1); FAIL;
+   GO(SYS___semctl, "(IPC_STAT) 4s 1m");
+   SY(SYS___semctl, x0, x0, x0+IPC_STAT, x0+1); FAIL;
 
    GO(SYS___semctl, "(other) 3s 0m");
    SY(SYS___semctl, x0, x0, x0+3000, x0+1); FAIL;
