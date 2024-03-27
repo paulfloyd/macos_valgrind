@@ -539,9 +539,6 @@ case "${host_os}" in
       AC_DEFINE([XCODE_13_0], 130000, [XCODE_VERS value for Xcode 13.0])
       AC_DEFINE([XCODE_14_0], 140000, [XCODE_VERS value for Xcode 14.0])
 
-      # Substitute the Xcode include path detected earlier
-      AC_SUBST(XCODE_INC_DIR, [$xcodedir_inc])
-
       AC_MSG_CHECKING([for the kernel version])
       kernel=`uname -r`
 
@@ -1297,6 +1294,9 @@ AM_COND_IF([VGCONF_OS_IS_DARWIN],
     AC_MSG_WARN([Couldn't find xcrun, most Xcode-related autodetection will be disabled and the build might fail])
   fi
   AC_MSG_RESULT([$xcodedir (includes: $xcodedir_inc)])
+
+  # Substitute the Xcode include path detected earlier
+  AC_SUBST(XCODE_INC_DIR, [$xcodedir_inc])
 ])
 
 
