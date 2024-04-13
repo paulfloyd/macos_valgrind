@@ -5098,7 +5098,9 @@ AC_CHECK_FUNCS([     \
         wcsncpy      \
         free_aligned_sized \
         wcpncpy      \
-        wcsxfrm
+        wcsxfrm      \
+        sem_timedwait \
+        sem_clockwait_np
         ])
 CFLAGS="$save_CFLAGS"
 
@@ -5143,6 +5145,10 @@ AM_CONDITIONAL([HAVE_WCPNCPY],
                [test x$ac_cv_func_wcpncpy = xyes])
 AM_CONDITIONAL([HAVE_WCSXFRM],
                [test x$ac_cv_func_wcsxfrm = xyes])
+AM_CONDITIONAL([HAVE_SEM_TIMEDWAIT],
+               [test x$ac_cv_func_sem_timedwait = xyes])
+AM_CONDITIONAL([HAVE_SEM_CLOCKWAIT_NP],
+               [test x$ac_cv_func_sem_clockwait_np = xyes])
 
 if test x$VGCONF_PLATFORM_PRI_CAPS = xMIPS32_LINUX \
      -o x$VGCONF_PLATFORM_PRI_CAPS = xMIPS64_LINUX \
@@ -5736,6 +5742,7 @@ AC_CONFIG_FILES([
    memcheck/tests/Makefile
    memcheck/tests/common/Makefile
    memcheck/tests/amd64/Makefile
+   memcheck/tests/arm64/Makefile
    memcheck/tests/x86/Makefile
    memcheck/tests/linux/Makefile
    memcheck/tests/linux/debuginfod-check.vgtest
