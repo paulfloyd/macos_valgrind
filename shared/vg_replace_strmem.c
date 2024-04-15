@@ -2431,7 +2431,7 @@ STRNCPY(libsystemZucZddylib, __strncpy_chk)
  return dst_orig + (src - src_orig); \
   }
 
-#if defined(VGO_linux) || defined(VGO_freebsd)
+#if defined(VGO_linux) || defined(VGO_freebsd) || defined(VGO_solaris)
  WCPNCPY(VG_Z_LIBC_SONAME, wcpncpy)
 #endif
 
