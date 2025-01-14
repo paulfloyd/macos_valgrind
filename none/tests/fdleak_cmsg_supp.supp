@@ -13,6 +13,13 @@
    fun:main
 }
 {
+   sup2-ppc64le
+   CoreError:FdNotClosed
+   fun:socket
+   fun:server
+   #fun:main
+}
+{
    sup3
    CoreError:FdNotClosed
    ...
@@ -42,3 +49,43 @@
    fun:client
    fun:main
 }
+{
+   sup6-ppc64le
+   CoreError:FdNotClosed
+   fun:socket
+   fun:client
+   #fun:main
+}
+{
+   sup7
+   CoreError:FdNotClosed
+   fun:_so_socket
+   fun:__xnet_socket
+   fun:client
+   fun:main
+}
+{
+   sup8
+   CoreError:FdNotClosed
+   fun:__so_recvmsg
+   fun:__xnet_recvmsg
+   fun:client
+   fun:main
+}
+{
+   sup9
+   CoreError:FdNotClosed
+   fun:_so_socket
+   fun:__xnet_socket
+   fun:server
+   fun:main
+}
+{
+   sup10
+   CoreError:FdNotClosed
+   fun:__so_accept
+   fun:accept
+   fun:server
+   fun:main
+}
+

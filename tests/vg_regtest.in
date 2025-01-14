@@ -54,7 +54,7 @@
 #   $PREFIX/bin/vg_regtest --all
 #
 # You can specify individual files to test, or whole directories, or both.
-# Directories are traversed recursively, except for ones named, for example,
+# Directories are traversed recursively, except for ones named, for example, 
 # CVS/ or docs/.
 #
 # Each test is defined in a file <test>.vgtest, containing one or more of the
@@ -120,9 +120,9 @@
 # the expected stdout which is kept in <test>.post.exp*.
 #
 # Sometimes it is useful to run all the tests at a high sanity check
-# level or with arbitrary other flags.  To make this simple, extra
+# level or with arbitrary other flags.  To make this simple, extra 
 # options, applied to all tests run, are read from $EXTRA_REGTEST_OPTS,
-# and handed to valgrind prior to any other flags specified by the
+# and handed to valgrind prior to any other flags specified by the 
 # .vgtest file.
 #
 # Some more notes on adding regression tests for a new tool are in
@@ -155,9 +155,9 @@ my $stderr_filter;      # filter program to run stderr results file through
 my $stdout_filter_args; # arguments passed to stdout_filter
 my $stderr_filter_args; # arguments passed to stderr_filter
 my $progB;              # Same but for progB
-my $argsB;              #
-my $stdoutB_filter;     #
-my $stderrB_filter;     #
+my $argsB;              # 
+my $stdoutB_filter;     # 
+my $stderrB_filter;     # 
 my $stdoutB_filter_args;# arguments passed to stdout_filterB
 my $stderrB_filter_args;# arguments passed to stderr_filterB
 my $stdinB;             # Input file for progB
@@ -170,7 +170,7 @@ my @envB = ();          # environment variable to set prior calling $progB
 my @failures;           # List of failed tests
 
 my $num_tests_done      = 0;
-my %num_failures        = (stderr => 0, stdout => 0,
+my %num_failures        = (stderr => 0, stdout => 0, 
                            stderrB => 0, stdoutB => 0,
                            post => 0);
 my %num_results         = ();
@@ -211,7 +211,7 @@ open(TSLOG, '>', 'test-suite-overall.log') or die $!;
 #    subsequent trouble when we change directories.
 #
 # Also checks the program exists and is executable.
-sub validate_program ($$$$)
+sub validate_program ($$$$) 
 {
     my ($dir, $prog, $must_exist, $must_be_executable) = @_;
 
@@ -222,18 +222,18 @@ sub validate_program ($$$$)
     if ($must_exist) {
         (-f $prog) or die "vg_regtest: `$prog' not found or not a file ($dir)\n";
     }
-    if ($must_be_executable) {
+    if ($must_be_executable) { 
         (-x $prog) or die "vg_regtest: `$prog' not executable ($dir)\n";
     }
 
     return $prog;
 }
 
-sub process_command_line()
+sub process_command_line() 
 {
     my $alldirs = 0;
     my @fs;
-
+    
     for my $arg (@ARGV) {
         if ($arg =~ /^-/) {
             if      ($arg =~ /^--all$/) {
@@ -260,18 +260,18 @@ sub process_command_line()
         }
     }
     $valgrind = validate_program($tests_dir, $valgrind, 1, 0);
-
+    
     if (defined $outer_valgrind) {
       $outer_valgrind = validate_program($tests_dir, $outer_valgrind, 1, 1);
       if ((not defined $outer_args)  || ($outer_args =~ /^\+/)) {
-          $run_outer_args =
+          $run_outer_args = 
                 " --command-line-only=yes"
               . " --sim-hints=enable-outer"
               . " --run-libc-freeres=no --run-cxx-freeres=no"
               . " --smc-check=all-non-file"
               . " --vgdb=no --trace-children=yes --read-var-info=no"
               . " --read-inline-info=yes"
-              . " --suppressions="
+              . " --suppressions=" 
               . validate_program($tests_dir,"./tests/outer_inner.supp",1,0)
               . " --memcheck:leak-check=full --memcheck:show-reachable=no"
               . " --num-callers=40"
@@ -318,7 +318,7 @@ sub read_vgtest_file($)
     # Every test directory must have a "filter_stderr"
     $stderr_filter = validate_program(".", $default_stderr_filter, 1, 1);
     $stderrB_filter = validate_program(".", $default_stderr_filter, 1, 1);
-
+    
 
     open(INPUTFILE, "< $f") || die "File $f not openable\n";
 
@@ -418,7 +418,7 @@ sub do_diffs($$$$$)
 {
     my ($fullname, $name, $mid, $tslog, $f_exps) = @_;
     if (! defined $tslog) {$tslog = *TSLOG;}
-
+    
     for my $f_exp (@$f_exps) {
         (-r $f_exp) or die "Could not read `$f_exp'\n";
 
@@ -459,12 +459,12 @@ sub do_diffs($$$$$)
     return "FAIL";
 }
 
-sub do_one_test($$)
+sub do_one_test($$) 
 {
     my ($dir, $vgtest) = @_;
     $vgtest =~ /^(.*)\.vgtest/;
     my $name = $1;
-    my $fullname = "$dir/$name";
+    my $fullname = "$dir/$name"; 
 
     # Pull any extra options (for example, --sanity-level=4)
     # from $EXTRA_REGTEST_OPTS.
@@ -625,7 +625,7 @@ sub do_one_test($$)
         @stdoutB_exps = ( "/dev/null" ) if (0 == scalar @stdoutB_exps);
         $diffrc = do_diffs($fullname, $name, "stdoutB", *VGTESTLOG, \@stdoutB_exps);
         if (defined $diffrc) { $rc = $diffrc; }
-
+        
         # Filter stderr
         $stderrB_filter_args = $name if (! defined $stderrB_filter_args);
         mysystem(*VGTESTLOG,
@@ -657,7 +657,7 @@ sub do_one_test($$)
 	    do_diffs($fullname, $name, "post", *VGTESTLOG, \@post_exps);
 	}
     }
-
+ 
     if (defined $cleanup) {
         (mysystem(*VGTESTLOG, "$cleanup") == 0) or
             print("(cleanup operation failed: $cleanup)\n");
@@ -673,7 +673,7 @@ sub do_one_test($$)
 #----------------------------------------------------------------------------
 sub test_one_dir($$);    # forward declaration
 
-sub test_one_dir($$)
+sub test_one_dir($$) 
 {
     my ($dir, $prev_dirs) = @_;
     $dir =~ s/\/$//;    # trim a trailing '/'
@@ -681,9 +681,9 @@ sub test_one_dir($$)
     # Ignore dirs into which we should not recurse.
     if ($dir =~ /^(BitKeeper|CVS|SCCS|docs|doc)$/) { return; }
 
-    (-x "$tests_dir/tests/arch_test") or die
+    (-x "$tests_dir/tests/arch_test") or die 
         "vg_regtest: 'arch_test' is missing.  Did you forget to 'make check'?\n";
-
+    
     # Ignore any dir whose name matches that of an architecture which is not
     # the architecture we are running on.  Eg. when running on x86, ignore
     # ppc/ directories ('arch_test' returns 1 for this case).  Likewise for
@@ -694,16 +694,13 @@ sub test_one_dir($$)
     if ($dir =~ /(\w+)-(\w+)/ &&
         256 == system("sh $tests_dir/tests/platform_test $1 $2")) { return; }
     if ($dir =~ "dSYM") { return; }
-
+    
     chdir($dir) or die "Could not change into $dir\n";
 
     # Nb: Don't prepend a '/' to the base directory
     my $full_dir = $prev_dirs . ($prev_dirs eq "" ? "" : "/") . $dir;
     print TSLOG scalar localtime, " entering $full_dir\n";
-    my $dashes = "";
-    if (length $full_dir <= 50) {
-      $dashes = "-" x (50 - length $full_dir);
-    }
+    my $dashes = "-" x (50 - length $full_dir);
 
     my @fs = glob "*";
     my $found_tests = (0 != (grep { $_ =~ /\.vgtest$/ } @fs));
@@ -758,13 +755,13 @@ sub plural($)
    return ( $_[0] == 1 ? "" : "s" );
 }
 
-sub summarise_results
+sub summarise_results 
 {
     my $x = ( $num_tests_done == 1 ? "test" : "tests" );
-
+    
     printf("\n== %d test%s, %d stderr failure%s, %d stdout failure%s, "
                          . "%d stderrB failure%s, %d stdoutB failure%s, "
-                         . "%d post failure%s ==\n",
+                         . "%d post failure%s ==\n", 
            $num_tests_done, plural($num_tests_done),
            $num_failures{"stderr"},   plural($num_failures{"stderr"}),
            $num_failures{"stdout"},   plural($num_failures{"stdout"}),
@@ -811,7 +808,7 @@ while (1) { # we will exit after one loop, unless looptillfail
     foreach my $f (@fs) {
         if (-d $f) {
             test_one_dir($f, "");
-        } else {
+        } else { 
             # Allow the .vgtest suffix to be given or omitted
             if ($f =~ /.vgtest$/ && -r $f) {
                 # do nothing

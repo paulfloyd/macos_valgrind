@@ -2357,10 +2357,6 @@ PRE(sys_fstat)
    PRINT("sys_fstat ( %ld, %#lx )", SARG1, ARG2);
    PRE_REG_READ2(long, "fstat", int, fildes, struct stat *, buf);
    PRE_MEM_WRITE("fstat(buf)", ARG2, sizeof(struct vki_stat));
-
-   /* Be strict. */
-   if (!ML_(fd_allowed)(ARG1, "fstat", tid, False))
-      SET_STATUS_Failure(VKI_EBADF);
 }
 
 POST(sys_fstat)
@@ -2743,7 +2739,7 @@ PRE(sys_shmsys)
 #if defined(SOLARIS_SHM_NEW)
    case VKI_SHMADV:
       /* Libc: int shmadv(int shmid, uint_t cmd, uint_t *advice); */
-      PRINT("sys_shmsys ( %ld, %ld, %lu, %ld )",
+      PRINT("sys_shmsys ( %ld, %ld, %lu, %lu )",
             SARG1, SARG2, ARG3, ARG4);
       PRE_REG_READ4(long, SC2("shmsys", "shmadv"), int, opcode,
                     int, shmid, vki_uint_t, cmd, vki_uint_t *, advice);
@@ -3930,7 +3926,7 @@ PRE(sys_execve)
 #if defined(SOLARIS_EXECVE_SYSCALL_TAKES_FLAGS)
    if (ARG1_is_fd)
       VG_(message)(Vg_UserMsg, "execve(%ld, %#lx, %#lx, %lu) failed, "
-                   "errno %ld\n", SARG1, ARG2, ARG3, ARG4, ERR);
+                   "errno %lu\n", SARG1, ARG2, ARG3, ARG4, ERR);
    else
       VG_(message)(Vg_UserMsg, "execve(%#lx(%s), %#lx, %#lx, %ld) failed, errno"
                    " %lu\n", ARG1, (HChar *) ARG1, ARG2, ARG3, SARG4, ERR);
@@ -6899,7 +6895,7 @@ PRE(sys_modctl)
 
       default:
          VG_(unimplemented)("Syswrap of the modctl call with command "
-                            "MODNVL_DEVLINKSYNC and op %ld.", ARG2);
+                            "MODNVL_DEVLINKSYNC and op %lu.", ARG2);
          /*NOTREACHED*/
          break;
       }
@@ -10905,7 +10901,7 @@ static SyscallTableEntry syscall_table[] = {
 #if defined(SOLARIS_OLD_SYSCALLS)
    SOLXY(__NR_lstat,                sys_lstat),                 /*  88 */
    GENX_(__NR_symlink,              sys_symlink),               /*  89 */
-   GENX_(__NR_readlink,             sys_readlink),              /*  90 */
+   GENXY(__NR_readlink,             sys_readlink),              /*  90 */
 #endif /* SOLARIS_OLD_SYSCALLS */
    GENX_(__NR_setgroups,            sys_setgroups),             /*  91 */
    GENXY(__NR_getgroups,            sys_getgroups),             /*  92 */

@@ -135,6 +135,7 @@ EXTRA_DIST = \
 	faultstatus.vgtest faultstatus.stderr.exp faultstatus.stderr.exp-s390x \
 	fcntl_setown.vgtest fcntl_setown.stdout.exp fcntl_setown.stderr.exp \
 	fdleak_cmsg.stderr.exp fdleak_cmsg.vgtest \
+	fdleak_cmsg_xml.stderr.exp-ppc64le \
 	fdleak_cmsg_xml.stderr.exp fdleak_cmsg_xml.vgtest \
 	fdleak_cmsg_supp.stderr.exp fdleak_cmsg_supp.supp \
 	fdleak_cmsg_supp.vgtest \
@@ -149,6 +150,7 @@ EXTRA_DIST = \
 	fdleak_fcntl.stderr.exp fdleak_fcntl.vgtest \
 	fdleak_fcntl_xml.stderr.exp fdleak_fcntl_xml.vgtest \
 	fdleak_ipv4.stderr.exp fdleak_ipv4.stdout.exp fdleak_ipv4.vgtest \
+	fdleak_ipv4_xml.stderr.exp-ppc64le \
 	fdleak_ipv4_xml.stderr.exp fdleak_ipv4_xml.stdout.exp \
 	fdleak_ipv4_xml.vgtest fdleak_ipv4_xml.stderr.exp-nomain \
 	fdleak_open.stderr.exp fdleak_open.vgtest \
@@ -248,6 +250,7 @@ EXTRA_DIST = \
 	process_vm_readv_writev.stderr.exp process_vm_readv_writev.vgtest \
 	sigprocmask.stderr.exp sigprocmask.vgtest \
 	socket_close.stderr.exp socket_close.vgtest \
+	socket_close_xml.stderr.exp-ppc64le \
 	socket_close_xml.stderr.exp socket_close_xml.vgtest \
 	file_dclose.stderr.exp file_dclose.vgtest \
 	file_dclose_xml.stderr.exp file_dclose_xml.vgtest \
@@ -255,7 +258,9 @@ EXTRA_DIST = \
 	file_dclose.supp file_dclose_sup.stderr.exp file_dclose_sup.vgtest \
 	double_close_range.stderr.exp double_close_range.vgtest \
 	log-track-fds.stderr.exp log-track-fds.vgtest \
-	xml-track-fds.stderr.exp xml-track-fds.vgtest
+	xml-track-fds.stderr.exp xml-track-fds.vgtest \
+	fdbaduse.stderr.exp fdbaduse.vgtest \
+	use_after_close.stderr.exp use_after_close.vgtest
 
 
 check_PROGRAMS = \
@@ -309,7 +314,9 @@ check_PROGRAMS = \
 	process_vm_readv_writev \
 	sigprocmask \
 	socket_close \
-	file_dclose
+	file_dclose \
+	fdbaduse \
+        use_after_close
 
 if HAVE_STATIC_LIBC
 if ! VGCONF_OS_IS_LINUX
@@ -328,6 +335,7 @@ endif
 
 if HAVE_NESTED_FUNCTIONS
    check_PROGRAMS += nestedfns
+   nestedfns_LDFLAGS = @FLAG_NO_WARN_EXECSTACK@
 endif
 
 # This doesn't appear to be compilable on Darwin.
@@ -336,7 +344,7 @@ if ! VGCONF_OS_IS_DARWIN_OR_FREEBSD
 endif
 
 if ! VGCONF_OS_IS_DARWIN
-   check_PROGRAMS += ppoll_alarm mmap_o_direct
+   check_PROGRAMS += ppoll_alarm
 endif
 
 # older (?) clang does not know -ansi
@@ -439,7 +447,7 @@ tls_LDADD		= tls.so tls2.so -lpthread
 tls_so_SOURCES		= tls_so.c
 tls_so_DEPENDENCIES	= tls2.so
 if VGCONF_OS_IS_DARWIN
- tls_so_LDFLAGS		= -dynamic -dynamiclib -all_load -fpic -undefined dynamic_lookup
+ tls_so_LDFLAGS		= -dynamic -dynamiclib -all_load -fpic
  tls_so_LDADD		= `pwd`/tls2.so
 else
  tls_so_LDFLAGS		= -Wl,-rpath,$(abs_top_builddir)/none/tests -shared -fPIC
@@ -463,3 +471,4 @@ valgrind_cpp_test_LDADD   = -lstdc++
 # C++ tests
 coolo_sigaction_SOURCES	= coolo_sigaction.cpp
 gxx304_SOURCES		= gxx304.cpp
+

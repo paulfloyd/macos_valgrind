@@ -3,7 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
-
+ 
 int main(void)
 {
    char* astring = strdup("this is a string # with something to seek");
@@ -11,7 +11,7 @@ int main(void)
    memccpy(astring+10, astring, '#', len-10);
    sprintf(astring, "this is a string # with something to seek");
    memccpy(astring, astring+10, '#', len);
-
+   
    sprintf(astring, "this is a string # with something to seek");
    /*
     * space is earlier than len, no overlap
@@ -30,3 +30,4 @@ int main(void)
    assert(NULL == res);
    free(astring);
 }
+

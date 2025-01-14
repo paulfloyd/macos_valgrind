@@ -976,7 +976,7 @@ struct vki_termios {
 #define _VKI_IOC_SIZEMASK  ((1ul << _VKI_IOC_SIZEBITS)-1)
 #define _VKI_IOC_DIRMASK   ((1ul << _VKI_IOC_DIRBITS)-1)
 
-#define _VKI_IOC_BASESHIFT   0U
+#define  _VKI_IOC_BASESHIFT   0U
 #define _VKI_IOC_NRSHIFT   0U
 #define _VKI_IOC_TYPESHIFT (_VKI_IOC_NRSHIFT+_VKI_IOC_NRBITS)
 #define _VKI_IOC_SIZESHIFT (_VKI_IOC_TYPESHIFT+_VKI_IOC_TYPEBITS)
@@ -1023,13 +1023,13 @@ extern unsigned int __vki_invalid_size_argument_for_IOC;
 // From sys/termios.h
 //----------------------------------------------------------------------
 
-#define VKI_TIOCFLUSH  _VKI_IOW('t', 16, int);
-#define VKI_TIOCGETA   _VKI_IOR('t', 19, struct vki_termios)  /* get termios */
-#define VKI_TIOCSETA   _VKI_IOR('t', 20, struct vki_termios)  /* set termios */
-#define VKI_TIOCSETAW  _VKI_IOR('t', 21, struct vki_termios)  /* drain,set */
-#define VKI_TIOCSETAF  _VKI_IOR('t', 22, struct vki_termios)  /* flush,set */
+#define  VKI_TIOCFLUSH  _VKI_IOW('t', 16, int);
+#define  VKI_TIOCGETA   _VKI_IOR('t', 19, struct vki_termios)  /* get termios */
+#define  VKI_TIOCSETA   _VKI_IOR('t', 20, struct vki_termios)  /* set termios */
+#define  VKI_TIOCSETAW  _VKI_IOR('t', 21, struct vki_termios)  /* drain,set */
+#define  VKI_TIOCSETAF  _VKI_IOR('t', 22, struct vki_termios)  /* flush,set */
 
-#define _VKI_TIOCPTMASTER  _VKI_IO('t', 28)    /* pts master validation */
+#define  _VKI_TIOCPTMASTER  _VKI_IO('t', 28)    /* pts master validation */
 
 #define VKI_TIOCSWINSZ  _VKI_IOW('t', 103, struct vki_winsize)  /* set window size */
 #define VKI_TIOCGWINSZ  _VKI_IOR('t', 104, struct vki_winsize)  /* get window size */
@@ -1230,6 +1230,8 @@ struct vki_rlimit {
 #define VKI_RLIMIT_CORE    4  /* max core file size */
 #define VKI_RLIMIT_NOFILE  8  /* max number of open files */
 
+#define VKI_GETRLIMITUSAGE_EUID 0x0001
+
 struct vki___wrusage {
    struct vki_rusage   wru_self;
    struct vki_rusage   wru_children;
@@ -1281,12 +1283,12 @@ struct vki_mq_attr {
 #define  VKI_UCF_SWAPPED   1
 
 struct vki_ucontext {
-   vki_sigset_t         uc_sigmask;
+   vki_sigset_t      uc_sigmask;
    struct vki_mcontext  uc_mcontext;
-   struct vki_ucontext* uc_link;
-   vki_stack_t          uc_stack;
-   int                  uc_flags;
-   unsigned int         __spare__[4];
+   struct vki_ucontext  *uc_link;
+   vki_stack_t    uc_stack;
+   int         uc_flags;
+   unsigned int      __spare__[4];
 };
 
 //----------------------------------------------------------------------
@@ -1974,14 +1976,10 @@ struct vki_umtx_robust_lists_params {
 #define VKI_UMTX_OP_SEM2_WAKE       24
 #define VKI_UMTX_OP_SHM             25
 #define VKI_UMTX_OP_ROBUST_LISTS    26
-
-#define VKI_UMTX_SHM_CREAT          0x0001
-
-#if (FREEBSD_VERS >= FREEBSD_13_3)
 #define VKI_UMTX_OP_GET_MIN_TIMEOUT 27
 #define VKI_UMTX_OP_SET_MIN_TIMEOUT 28
-#endif
 
+#define VKI_UMTX_SHM_CREAT          0x0001
 
 //----------------------------------------------------------------------
 // From sys/acl.h
@@ -3250,7 +3248,7 @@ union vki_ccb {
    char make_union_right_size[0x4E0];
 };
 
-#define VKI_CAMIOCOMMAND _VKI_IOWR(VKI_CAM_VERSION, 2, union vki_ccb)
+#define VKI_CAMIOCOMMAND    _VKI_IOWR(VKI_CAM_VERSION, 2, union vki_ccb)
 
 
 /*--------------------------------------------------------------------*/

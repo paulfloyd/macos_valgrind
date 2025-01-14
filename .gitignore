@@ -869,12 +869,14 @@
 /memcheck/tests/bug287260
 /memcheck/tests/bug340392
 /memcheck/tests/bug401284
+/memcheck/tests/bug445235_ada_demangle
 /memcheck/tests/bug464969_d_demangle
 /memcheck/tests/bug472219
 /memcheck/tests/bug484002
 /memcheck/tests/calloc-overflow
 /memcheck/tests/cdebug_zlib
 /memcheck/tests/cdebug_zlib_gnu
+/memcheck/tests/cdebug_zstd
 /memcheck/tests/client-msg
 /memcheck/tests/clientperm
 /memcheck/tests/clientstackperm
@@ -1395,12 +1397,12 @@
 /memcheck/tests/freebsd/.deps
 /memcheck/tests/freebsd/Makefile
 /memcheck/tests/freebsd/Makefile.in
-/memcheck/tests/freebsd/452275
 /memcheck/tests/freebsd/access
 /memcheck/tests/freebsd/aio
 /memcheck/tests/freebsd/aiov
 /memcheck/tests/freebsd/aio_read
 /memcheck/tests/freebsd/aligned_alloc
+/memcheck/tests/freebsd/bug452274
 /memcheck/tests/freebsd/bug464476
 /memcheck/tests/freebsd/bug470713
 /memcheck/tests/freebsd/bug483786
@@ -1420,6 +1422,7 @@
 /memcheck/tests/freebsd/get_set_login
 /memcheck/tests/freebsd/getfh
 /memcheck/tests/freebsd/getfsstat
+/memcheck/tests/freebsd/getrlimitusage
 /memcheck/tests/freebsd/inlinfo
 /memcheck/tests/freebsd/inlinfo_nested.so
 /memcheck/tests/freebsd/kqueue
@@ -1432,8 +1435,6 @@
 /memcheck/tests/freebsd/realpathat
 /memcheck/tests/freebsd/revoke
 /memcheck/tests/freebsd/scalar
-/memcheck/tests/freebsd/scalar_13_plus
-/memcheck/tests/freebsd/scalar_15_plus
 /memcheck/tests/freebsd/scalar_abort2
 /memcheck/tests/freebsd/scalar_fork
 /memcheck/tests/freebsd/scalar_pdfork
@@ -1542,6 +1543,7 @@
 /none/tests/execve
 /none/tests/faultstatus
 /none/tests/fcntl_setown
+/none/tests/fdbaduse
 /none/tests/fdleak_cmsg
 /none/tests/fdleak_creat
 /none/tests/fdleak_dup
@@ -1647,6 +1649,7 @@
 /none/tests/tls
 /none/tests/track-fds-exec-children
 /none/tests/unit_debuglog
+/none/tests/use_after_close
 /none/tests/valgrind_cpp_test
 /none/tests/vgcore.*
 /none/tests/vgprintf
@@ -1851,6 +1854,7 @@
 /none/tests/linux/blockfault
 /none/tests/linux/brk-overflow1
 /none/tests/linux/brk-overflow2
+/none/tests/linux/bug498317
 /none/tests/linux/clonev
 /none/tests/linux/Makefile
 /none/tests/linux/Makefile.in
@@ -2247,11 +2251,12 @@
 /none/tests/freebsd/Makefile
 /none/tests/freebsd/Makefile.in
 /none/tests/freebsd/auxv
+/none/tests/freebsd/bug452274
+/none/tests/freebsd/bug498317
 /none/tests/freebsd/osrel
 /none/tests/freebsd/swapcontext
 /none/tests/freebsd/fexecve
 /none/tests/freebsd/hello_world
-/none/tests/freebsd/452275
 /none/tests/freebsd/proc_pid_file
 /none/tests/freebsd/sanity_level_thread
 /none/tests/freebsd/usrstack
