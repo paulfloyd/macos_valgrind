@@ -64,7 +64,7 @@
 
 /* Load the client whose name is VG_(argv_the_exename). */
 
-static void load_client ( /*MOD*/ExeInfo* info, 
+static void load_client ( /*MOD*/ExeInfo* info,
                           /*OUT*/Addr*    client_ip,
 			  /*OUT*/Addr*    client_toc)
 {
@@ -143,9 +143,9 @@ static HChar** setup_client_env ( HChar** origenv, const HChar* toolname, Bool u
       paths.  We might not need the space for vgpreload_<tool>.so, but it
       doesn't hurt to over-allocate briefly.  The 16s are just cautious
       slop. */
-   Int preload_core_path_len = vglib_len + sizeof(preload_core) 
+   Int preload_core_path_len = vglib_len + VG_(strlen)(preload_core)
                                          + sizeof(VG_PLATFORM) + 16;
-   Int preload_tool_path_len = vglib_len + VG_(strlen)(toolname) 
+   Int preload_tool_path_len = vglib_len + VG_(strlen)(toolname)
                                          + sizeof(VG_PLATFORM) + 16;
    Int preload_string_len    = preload_core_path_len + preload_tool_path_len;
    HChar* preload_string     = VG_(malloc)("initimg-linux.sce.1",
@@ -156,10 +156,10 @@ static HChar** setup_client_env ( HChar** origenv, const HChar* toolname, Bool u
    VG_(snprintf)(preload_tool_path, preload_tool_path_len,
                  "%s/vgpreload_%s-%s.so", VG_(libdir), toolname, VG_PLATFORM);
    if (VG_(access)(preload_tool_path, True/*r*/, False/*w*/, False/*x*/) == 0) {
-      VG_(snprintf)(preload_string, preload_string_len, "%s/%s-%s.so:%s", 
+      VG_(snprintf)(preload_string, preload_string_len, "%s/%s-%s.so:%s",
                     VG_(libdir), preload_core, VG_PLATFORM, preload_tool_path);
    } else {
-      VG_(snprintf)(preload_string, preload_string_len, "%s/%s-%s.so", 
+      VG_(snprintf)(preload_string, preload_string_len, "%s/%s-%s.so",
                     VG_(libdir), preload_core, VG_PLATFORM);
    }
    VG_(free)(preload_tool_path);
@@ -186,7 +186,7 @@ static HChar** setup_client_env ( HChar** origenv, const HChar* toolname, Bool u
       *cpp++ = *origenv++;
    }
    *cpp = NULL;
-   
+
    vg_assert(envc == (cpp - ret));
 
    /* Walk over the new environment, mashing as we go */
@@ -319,7 +319,7 @@ static HChar *copy_str(HChar **tab, const HChar *str)
 
 
 /* ----------------------------------------------------------------
- 
+
    This sets up the client's initial stack, containing the args,
    environment and aux vector.
 
@@ -381,7 +381,7 @@ struct auxv *find_auxv(UWord* sp)
    while (*sp != 0)     // skip env
       sp++;
    sp++;
-   
+
 #if defined(VGA_ppc32) || defined(VGA_ppc64be) || defined(VGA_ppc64le)
 # if defined AT_IGNOREPPC
    while (*sp == AT_IGNOREPPC)        // skip AT_IGNOREPPC entries
@@ -392,9 +392,9 @@ struct auxv *find_auxv(UWord* sp)
    return (struct auxv *)sp;
 }
 
-static 
+static
 Addr setup_client_stack( void*  init_sp,
-                         HChar** orig_envp, 
+                         HChar** orig_envp,
                          const ExeInfo* info,
                          UInt** client_auxv,
                          Addr   clstack_end,
@@ -434,7 +434,7 @@ Addr setup_client_stack( void*  init_sp,
    /* first of all, work out how big the client stack will be */
    stringsize   = 0;
 
-   /* paste on the extra args if the loader needs them (ie, the #! 
+   /* paste on the extra args if the loader needs them (ie, the #!
       interpreter and its argument) */
    argc = 0;
    if (info->interp_name != NULL) {
@@ -451,7 +451,7 @@ Addr setup_client_stack( void*  init_sp,
 
    for (i = 0; i < VG_(sizeXA)( VG_(args_for_client) ); i++) {
       argc++;
-      stringsize += VG_(strlen)( * (HChar**) 
+      stringsize += VG_(strlen)( * (HChar**)
                                    VG_(indexXA)( VG_(args_for_client), i ))
                     + 1;
    }
@@ -499,7 +499,7 @@ Addr setup_client_stack( void*  init_sp,
    client_SP = VG_ROUNDDN(client_SP, 16); /* make stack 16 byte aligned */
 
    /* base of the string table (aligned) */
-   stringbase = strtab = (HChar *)clstack_end 
+   stringbase = strtab = (HChar *)clstack_end
                          - VG_ROUNDUP(stringsize, sizeof(int));
 
    clstack_start = VG_PGROUNDDN(client_SP);
@@ -561,7 +561,7 @@ Addr setup_client_stack( void*  init_sp,
      ok = VG_(am_create_reservation)(
              resvn_start,
              resvn_size -inner_HACK,
-             SmUpper, 
+             SmUpper,
              anon_size +inner_HACK
           );
      if (ok) {
@@ -583,7 +583,7 @@ Addr setup_client_stack( void*  init_sp,
      }
 
      vg_assert(ok);
-     vg_assert(!sr_isError(res)); 
+     vg_assert(!sr_isError(res));
 
      /* Record stack extent -- needed for stack-change code. */
      VG_(clstk_start_base) = anon_start -inner_HACK;
@@ -608,7 +608,7 @@ Addr setup_client_stack( void*  init_sp,
 
    for (i = 0; i < VG_(sizeXA)( VG_(args_for_client) ); i++) {
       *ptr++ = (Addr)copy_str(
-                       &strtab, 
+                       &strtab,
                        * (HChar**) VG_(indexXA)( VG_(args_for_client), i )
                      );
    }
@@ -721,7 +721,9 @@ Addr setup_client_stack( void*  init_sp,
                auxv->u.a_val &= ((VKI_HWCAP_S390_TE - 1)
                                  | VKI_HWCAP_S390_VXRS
                                  | VKI_HWCAP_S390_VXRS_EXT
-                                 | VKI_HWCAP_S390_VXRS_EXT2);
+                                 | VKI_HWCAP_S390_VXRS_EXT2
+                                 | VKI_HWCAP_S390_DFLT
+                                 | VKI_HWCAP_S390_NNPA);
             }
 #           elif defined(VGP_arm64_linux)
             {
@@ -732,6 +734,7 @@ Addr setup_client_stack( void*  init_sp,
                                | VKI_HWCAP_PMULL        \
                                | VKI_HWCAP_SHA1         \
                                | VKI_HWCAP_SHA2         \
+                               | VKI_HWCAP_SHA512       \
                                | VKI_HWCAP_CRC32        \
                                | VKI_HWCAP_FP           \
                                | VKI_HWCAP_ASIMD        \
@@ -874,16 +877,16 @@ Addr setup_client_stack( void*  init_sp,
             /* acquire cache info */
             if (auxv->u.a_val > 0) {
                VG_(machine_ppc32_set_clszB)( auxv->u.a_val );
-               VG_(debugLog)(2, "initimg", 
-                                "PPC32 icache line size %u (type %u)\n", 
+               VG_(debugLog)(2, "initimg",
+                                "PPC32 icache line size %u (type %u)\n",
                                 (UInt)auxv->u.a_val, (UInt)auxv->a_type );
             }
 #           elif defined(VGP_ppc64be_linux) || defined(VGP_ppc64le_linux)
             /* acquire cache info */
             if (auxv->u.a_val > 0) {
                VG_(machine_ppc64_set_clszB)( auxv->u.a_val );
-               VG_(debugLog)(2, "initimg", 
-                                "PPC64 icache line size %u (type %u)\n", 
+               VG_(debugLog)(2, "initimg",
+                                "PPC64 icache line size %u (type %u)\n",
                                 (UInt)auxv->u.a_val, (UInt)auxv->a_type );
             }
 #           endif
@@ -942,7 +945,7 @@ Addr setup_client_stack( void*  init_sp,
          default:
             /* stomp out anything we don't know about */
             VG_(debugLog)(2, "initimg",
-                             "stomping auxv entry %llu\n", 
+                             "stomping auxv entry %llu\n",
                              (ULong)auxv->a_type);
             auxv->a_type = AT_IGNORE;
             break;
@@ -984,10 +987,10 @@ static void setup_client_dataseg ( SizeT max_size )
 
    /* Try to create the data seg and associated reservation where
       VG_(brk_base) says. */
-   ok = VG_(am_create_reservation)( 
-           resvn_start, 
-           resvn_size, 
-           SmLower, 
+   ok = VG_(am_create_reservation)(
+           resvn_start,
+           resvn_size,
+           SmLower,
            anon_size
         );
 
@@ -998,10 +1001,10 @@ static void setup_client_dataseg ( SizeT max_size )
                       ( 0/*floating*/, anon_size+resvn_size, &ok );
       if (ok) {
          resvn_start = anon_start + anon_size;
-         ok = VG_(am_create_reservation)( 
-                 resvn_start, 
-                 resvn_size, 
-                 SmLower, 
+         ok = VG_(am_create_reservation)(
+                 resvn_start,
+                 resvn_size,
+                 SmLower,
                  anon_size
               );
          if (ok)
@@ -1017,9 +1020,9 @@ static void setup_client_dataseg ( SizeT max_size )
       segment is RWX natively, at least according to /proc/self/maps.
       Also, having a non-executable data seg would kill any program which
       tried to create code in the data seg and then run it. */
-   sres = VG_(am_mmap_anon_fixed_client)( 
-             anon_start, 
-             anon_size, 
+   sres = VG_(am_mmap_anon_fixed_client)(
+             anon_start,
+             anon_size,
              VKI_PROT_READ|VKI_PROT_WRITE|VKI_PROT_EXEC
           );
    vg_assert(!sr_isError(sres));
@@ -1121,8 +1124,8 @@ IIFinaliseImageInfo VG_(ii_create_image)( IICreateImageInfo iicii,
       iifii.clstack_max_size = szB;
 
       iifii.initial_client_SP
-         = setup_client_stack( init_sp, env, 
-                               &info, &iifii.client_auxv, 
+         = setup_client_stack( init_sp, env,
+                               &info, &iifii.client_auxv,
                                iicii.clstack_end, iifii.clstack_max_size,
                                vex_archinfo );
 
@@ -1131,7 +1134,7 @@ IIFinaliseImageInfo VG_(ii_create_image)( IICreateImageInfo iicii,
       VG_(debugLog)(2, "initimg",
                        "Client info: "
                        "initial_IP=%p initial_TOC=%p brk_base=%p\n",
-                       (void*)(iifii.initial_client_IP), 
+                       (void*)(iifii.initial_client_IP),
                        (void*)(iifii.initial_client_TOC),
                        (void*)VG_(brk_base) );
       VG_(debugLog)(2, "initimg",
@@ -1143,10 +1146,10 @@ IIFinaliseImageInfo VG_(ii_create_image)( IICreateImageInfo iicii,
 
    //--------------------------------------------------------------
    // Setup client data (brk) segment.  Initially a 1-page segment
-   // which abuts a shrinkable reservation. 
+   // which abuts a shrinkable reservation.
    //     p: load_client()     [for 'info' and hence VG_(brk_base)]
    //--------------------------------------------------------------
-   { 
+   {
       SizeT m1 = 1024 * 1024;
       SizeT m8 = 8 * m1;
       SizeT dseg_max_size = (SizeT)VG_(client_rlimit_data).rlim_cur;

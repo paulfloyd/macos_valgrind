@@ -145,7 +145,7 @@ static HChar** setup_client_env ( HChar** origenv, const HChar* toolname)
       paths.  We might not need the space for vgpreload_<tool>.so, but it
       doesn't hurt to over-allocate briefly.  The 16s are just cautious
       slop. */
-   Int preload_core_path_len = vglib_len + sizeof(preload_core)
+   Int preload_core_path_len = vglib_len + VG_(strlen)(preload_core)
                                + sizeof(VG_PLATFORM) + 16;
    Int preload_tool_path_len = vglib_len + VG_(strlen)(toolname)
                                + sizeof(VG_PLATFORM) + 16;
@@ -713,12 +713,35 @@ static Addr setup_client_stack(const void*  init_sp,
       case VKI_AT_CANARYLEN:
 
 #if (FREEBSD_VERS >= FREEBSD_11)
-      // FreeBSD 11+ also have HWCAP and HWCAP2
       case VKI_AT_EHDRFLAGS:
 #endif
          /* All these are pointerless, so we don't need to do
             anything about them. */
          break;
+#if defined(VGP_arm64_freebsd)
+      // FreeBSD 11+ also have HWCAP and HWCAP2
+      // but they aren't used on amd64
+      case VKI_AT_HWCAP:
+#define ARM64_SUPPORTED_HWCAP (VKI_HWCAP_ATOMICS        \
+                               | VKI_HWCAP_AES          \
+                               | VKI_HWCAP_PMULL        \
+                               | VKI_HWCAP_SHA1         \
+                               | VKI_HWCAP_SHA2         \
+                               | VKI_HWCAP_SHA512       \
+                               | VKI_HWCAP_CRC32        \
+                               | VKI_HWCAP_ASIMDRDM     \
+                               | VKI_HWCAP_FP           \
+                               | VKI_HWCAP_ASIMD        \
+                               | VKI_HWCAP_ASIMDDP)
+               auxv->u.a_val &= ARM64_SUPPORTED_HWCAP;
+         break;
+#undef ARM64_SUPPORTED_HWCAP
+      // not yet
+      /*
+      case VKI_AT_HWCAP2:
+         break;
+      */
+#endif
 
       case VKI_AT_EXECPATH:
          auxv->u.a_ptr = copy_str(&strtab, resolved_name);
@@ -1098,6 +1121,27 @@ void VG_(ii_finalise_image)( IIFinaliseImageInfo iifii )
    arch->vex.guest_RSP = ((iifii.initial_client_SP - 8) & ~0xFUL) + 8;
    arch->vex.guest_RDI = iifii.initial_client_SP;
    arch->vex.guest_RIP = iifii.initial_client_IP;
+
+#elif defined(VGP_arm64_freebsd)
+
+   vg_assert(0 == sizeof(VexGuestARM64State) % 16);
+
+   /* Zero out the initial state, and set up the simulated FPU in a
+      sane way. */
+   LibVEX_GuestARM64_initialise(&arch->vex);
+
+   /* Zero out the shadow areas. */
+   VG_(memset)(&arch->vex_shadow1, 0, sizeof(VexGuestARM64State));
+   VG_(memset)(&arch->vex_shadow2, 0, sizeof(VexGuestARM64State));
+
+   /* Put essential stuff into the new state. */
+   //arch->vex.guest_XSP = ((iifii.initial_client_SP - 8) & ~0xFUL) + 8;
+   arch->vex.guest_XSP = iifii.initial_client_SP;
+   arch->vex.guest_X0 = iifii.initial_client_SP;
+   if (iifii.initial_client_SP % 16) {
+      arch->vex.guest_X0 += 8;
+   }
+   arch->vex.guest_PC = iifii.initial_client_IP;
 
 #  else
 #    error Unknown platform

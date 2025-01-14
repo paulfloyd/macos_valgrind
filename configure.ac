@@ -1,6 +1,6 @@
 
 ##------------------------------------------------------------##
-# 
+#
 # The multiple-architecture stuff in this file is pretty
 # cryptic.  Read docs/internals/multiple-architectures.txt
 # for at least a partial explanation of what is going on.
@@ -15,10 +15,10 @@
 # Also set the (expected/last) release date here.
 # Do not forget to rerun ./autogen.sh
 m4_define([v_major_ver], [3])
-m4_define([v_minor_ver], [23])
+m4_define([v_minor_ver], [24])
 m4_define([v_micro_ver], [0])
 m4_define([v_suffix_ver], [GIT])
-m4_define([v_rel_date], ["?? Apr 2024"])
+m4_define([v_rel_date], ["?? Oct 2024"])
 m4_define([v_version],
 	  m4_if(v_suffix_ver, [],
 		[v_major_ver.v_minor_ver.v_micro_ver],
@@ -120,6 +120,20 @@ ASFLAGS=""
 AC_SUBST(ASFLAGS)
 ])
 
+dnl automake-1.10 does not have AM_COND_IF (added in 1.11), so we supply a
+dnl fallback definition
+dnl The macro is courtesy of Dave Hart:
+dnl   https://lists.gnu.org/archive/html/automake/2010-12/msg00045.html
+m4_ifndef([AM_COND_IF], [AC_DEFUN([AM_COND_IF], [
+if test -z "$$1_TRUE"; then :
+  m4_n([$2])[]dnl
+m4_ifval([$3],
+[else
+  $3
+])dnl
+fi[]dnl
+])])
+
 
 # Check if 'diff' supports -u (universal diffs) and use it if possible.
 
@@ -144,11 +158,45 @@ if test "$ac_prog_cc_stdc" = "c99"; then
     AC_MSG_ERROR([Valgrind relies on a C compiler supporting C99])
 fi
 
+# macOS: Detect the Xcode SDK path and inject it in different tools
+AM_COND_IF([VGCONF_OS_IS_DARWIN],
+[
+  AC_ARG_VAR([DEVELOPER_DIR],[Overrides the active developer directory (used in gcc, xcrun, etc)])
+  AC_CHECK_PROG([XCRUN], [xcrun], [yes], [no])
+
+  AC_MSG_CHECKING([for Xcode SDK and includes])
+  AC_ARG_WITH([xcode-path],
+  [  --with-xcode-path=PATH      Specify path for Xcode SDK],
+  [
+      # Set defaults in case `xcrun` fails
+      xcodedir="$withval"
+      xcodedir_inc="$xcodedir/usr/include"
+      # Defining DEVELOPER_DIR will override which version of gcc, xcrun, etc is being used
+      export DEVELOPER_DIR="$xcodedir"
+  ],
+  [
+      # Use system defaults, in case `xcrun` fails
+      xcodedir="active developer directory"
+      xcodedir_inc="/usr/include"
+  ])
+
+  if test "x$XCRUN" != "xno"; then
+    xcrundir=`xcrun --sdk macosx --show-sdk-path`
+    if test ! -z "$xcrundir"; then
+        xcodedir="$xcrundir"
+        xcodedir_inc="$xcodedir/usr/include"
+    fi
+  else
+    AC_MSG_WARN([Couldn't find xcrun, most Xcode-related autodetection will be disabled and the build might fail])
+  fi
+  AC_MSG_RESULT([$xcodedir (includes: $xcodedir_inc)])
+])
+
 # We don't want gcc < 3.0
 AC_MSG_CHECKING([for a supported version of gcc])
 
 # Obtain the compiler version.
-# 
+#
 # A few examples of how the ${CC} --version output looks like:
 #
 # ######## gcc variants ########
@@ -184,7 +232,7 @@ then
     is_clang="clang"
     # Don't use -dumpversion with clang: it will always produce "4.2.1".
     gcc_version=`${CC} --version | $SED -n -e 's/.*clang version \([0-9.]*\).*$/\1/p'`
-elif test "x`${CC} --version | $SED -n -e 's/icc.*\(ICC\).*/\1/p'`" = "xICC" ; 
+elif test "x`${CC} --version | $SED -n -e 's/icc.*\(ICC\).*/\1/p'`" = "xICC" ;
 then
     is_clang="icc"
     gcc_version=`${CC} -dumpversion 2>/dev/null`
@@ -251,12 +299,12 @@ AC_MSG_CHECKING([for a supported CPU])
 VGCONF_PLATFORM_ARM_ARCH=
 
 case "${host_cpu}" in
-     i?86) 
+     i?86)
 	AC_MSG_RESULT([ok (${host_cpu})])
         ARCH_MAX="x86"
         ;;
 
-     x86_64|amd64) 
+     x86_64|amd64)
         AC_MSG_RESULT([ok (${host_cpu})])
         ARCH_MAX="amd64"
         ;;
@@ -336,7 +384,7 @@ case "${host_cpu}" in
         ARCH_MAX="nanomips"
         ;;
 
-     *) 
+     *)
 	AC_MSG_RESULT([no (${host_cpu})])
 	AC_MSG_ERROR([Unsupported host architecture. Sorry])
 	;;
@@ -356,14 +404,14 @@ AC_SUBST(VGCONF_PLATFORM_ARM_ARCH)
 
 # Check if a 64-bit only build has been requested
 AC_CACHE_CHECK([for a 64-bit only build], vg_cv_only64bit,
-   [AC_ARG_ENABLE(only64bit, 
+   [AC_ARG_ENABLE(only64bit,
       [  --enable-only64bit      do a 64-bit only build],
       [vg_cv_only64bit=$enableval],
       [vg_cv_only64bit=no])])
 
 # Check if a 32-bit only build has been requested
 AC_CACHE_CHECK([for a 32-bit only build], vg_cv_only32bit,
-   [AC_ARG_ENABLE(only32bit, 
+   [AC_ARG_ENABLE(only32bit,
       [  --enable-only32bit      do a 32-bit only build],
       [vg_cv_only32bit=$enableval],
       [vg_cv_only32bit=no])])
@@ -395,7 +443,7 @@ case "${host_os}" in
         kernel=`uname -r`
 
         case "${kernel}" in
-             0.*|1.*|2.0.*|2.1.*|2.2.*|2.3.*|2.4.*|2.5.*) 
+             0.*|1.*|2.0.*|2.1.*|2.2.*|2.3.*|2.4.*|2.5.*)
         	    AC_MSG_RESULT([unsupported (${kernel})])
         	    AC_MSG_ERROR([Valgrind needs a Linux kernel >= 2.6])
         	    ;;
@@ -410,8 +458,6 @@ case "${host_os}" in
      *freebsd*)
         AC_MSG_RESULT([ok (${host_os})])
         VGCONF_OS="freebsd"
-        AC_DEFINE([FREEBSD_10], 1000, [FREEBSD_VERS value for FreeBSD 10.x])
-        freebsd_10=1000
         AC_DEFINE([FREEBSD_11], 1100, [FREEBSD_VERS value for FreeBSD 11.x])
         freebsd_11=1100
         AC_DEFINE([FREEBSD_12], 1200, [FREEBSD_VERS value for FreeBSD 12.0 to 12.1])
@@ -426,8 +472,12 @@ case "${host_os}" in
         freebsd_13_2=1320
         AC_DEFINE([FREEBSD_13_3], 1330, [FREEBSD_VERS value for FreeBSD 13.3])
         freebsd_13_3=1330
-        AC_DEFINE([FREEBSD_14], 1400, [FREEBSD_VERS value for FreeBSD 14.x])
-        freebsd_14=1400
+        AC_DEFINE([FREEBSD_13_4], 1340, [FREEBSD_VERS value for FreeBSD 13.4])
+        freebsd_13_4=1340
+        AC_DEFINE([FREEBSD_14_0], 1400, [FREEBSD_VERS value for FreeBSD 14.0])
+        freebsd_14_0=1400
+        AC_DEFINE([FREEBSD_14_1], 1410, [FREEBSD_VERS value for FreeBSD 14.1])
+        freebsd_14_1=1410
         AC_DEFINE([FREEBSD_15], 1500, [FREEBSD_VERS value for FreeBSD 15.x])
         freebsd_15=1500
 
@@ -435,11 +485,6 @@ case "${host_os}" in
         kernel=`uname -r`
 
         case "${kernel}" in
-        10.*)
-           AC_MSG_RESULT([FreeBSD 10.x (${kernel})])
-           AC_DEFINE([FREEBSD_VERS], FREEBSD_10, [FreeBSD version])
-           freebsd_vers=$freebsd_10
-           ;;
         11.*)
            AC_MSG_RESULT([FreeBSD 11.x (${kernel})])
            AC_DEFINE([FREEBSD_VERS], FREEBSD_11, [FreeBSD version])
@@ -481,16 +526,34 @@ case "${host_os}" in
               AC_DEFINE([FREEBSD_VERS], FREEBSD_13_3, [FreeBSD version])
               freebsd_vers=$freebsd_13_3
               ;;
+           13.4-*)
+              AC_MSG_RESULT([FreeBSD 13.4 (${kernel})])
+              AC_DEFINE([FREEBSD_VERS], FREEBSD_13_4, [FreeBSD version])
+              freebsd_vers=$freebsd_13_4
+              ;;
            *)
               AC_MSG_RESULT([unsupported (${kernel})])
-              AC_MSG_ERROR([Valgrind works on FreeBSD 10.x to 15.x])
+              AC_MSG_ERROR([Valgrind works on FreeBSD 11.x to 15.x])
               ;;
            esac
            ;;
         14.*)
-           AC_MSG_RESULT([FreeBSD 14.x (${kernel})])
-           AC_DEFINE([FREEBSD_VERS], FREEBSD_14, [FreeBSD version])
-           freebsd_vers=$freebsd_14
+           case "${kernel}" in
+           14.0-*)
+              AC_MSG_RESULT([FreeBSD 14.0 (${kernel})])
+              AC_DEFINE([FREEBSD_VERS], FREEBSD_14_0, [FreeBSD version])
+              freebsd_vers=$freebsd_14_0
+              ;;
+           14.1-*)
+              AC_MSG_RESULT([FreeBSD 14.1 (${kernel})])
+              AC_DEFINE([FREEBSD_VERS], FREEBSD_14_1, [FreeBSD version])
+              freebsd_vers=$freebsd_14_1
+              ;;
+           *)
+              AC_MSG_RESULT([unsupported (${kernel})])
+              AC_MSG_ERROR([Valgrind works on FreeBSD 11.x to 15.x])
+              ;;
+           esac
            ;;
         15.*)
            AC_MSG_RESULT([FreeBSD 15.x (${kernel})])
@@ -499,7 +562,7 @@ case "${host_os}" in
            ;;
         *)
            AC_MSG_RESULT([unsupported (${kernel})])
-           AC_MSG_ERROR([Valgrind works on FreeBSD 10.x to 15.x])
+           AC_MSG_ERROR([Valgrind works on FreeBSD 11.x to 15.x])
            ;;
         esac
 
@@ -530,6 +593,7 @@ case "${host_os}" in
       AC_ADD_DARWIN_VERS(DARWIN_12_00, 120000, [macOS 12.0])
       AC_ADD_DARWIN_VERS(DARWIN_13_00, 130000, [macOS 13.0])
       AC_ADD_DARWIN_VERS(DARWIN_14_00, 140000, [macOS 14.0])
+      AC_ADD_DARWIN_VERS(DARWIN_15_00, 150000, [macOS 15.0])
 
       AC_DEFINE([XCODE_10_XX], 101400, [XCODE_VERS value for Xcode earlier than 10.15])
       AC_DEFINE([XCODE_10_14_6], 101406, [XCODE_VERS value for Xcode 10.14.6])
@@ -538,6 +602,10 @@ case "${host_os}" in
       AC_DEFINE([XCODE_12_0], 120000, [XCODE_VERS value for Xcode 12.0])
       AC_DEFINE([XCODE_13_0], 130000, [XCODE_VERS value for Xcode 13.0])
       AC_DEFINE([XCODE_14_0], 140000, [XCODE_VERS value for Xcode 14.0])
+      AC_DEFINE([XCODE_15_0], 150000, [XCODE_VERS value for Xcode 15.0])
+
+      # Substitute the Xcode include path detected earlier
+      AC_SUBST(XCODE_INC_DIR, [$xcodedir_inc])
 
       AC_MSG_CHECKING([for the kernel version])
       kernel=`uname -r`
@@ -636,9 +704,14 @@ case "${host_os}" in
           DARWIN_VERS=$DARWIN_14_00
           DEFAULT_SUPP="darwin23.supp ${DEFAULT_SUPP}"
           ;;
+        24.*)
+          AC_MSG_RESULT([Darwin 24.x (${kernel}) / macOS 15 Sequoia])
+          DARWIN_VERS=$DARWIN_15_00
+          DEFAULT_SUPP="darwin24.supp ${DEFAULT_SUPP}"
+          ;;
         *)
           AC_MSG_RESULT([unsupported (${kernel})])
-          AC_MSG_ERROR([Valgrind works on Darwin 10.x-23.x (Mac OS X 10.6-10.11 and macOS 10.12-14.0)])
+          AC_MSG_ERROR([Valgrind works on Darwin 10.x-24.x (Mac OS X 10.6-10.11 and macOS 10.12-15.0)])
           ;;
       esac
       AC_DEFINE_UNQUOTED([DARWIN_VERS], $DARWIN_VERS, [Darwin / Mac OS X version])
@@ -681,9 +754,12 @@ case "${host_os}" in
         14.*)
           AC_DEFINE([XCODE_VERS], XCODE_14_0, [Xcode version])
           ;;
+        15.*)
+          AC_DEFINE([XCODE_VERS], XCODE_15_0, [Xcode version])
+          ;;
         *)
           AC_MSG_RESULT([unsupported (${xcodeversion})])
-          AC_MSG_ERROR([Valgrind works on Darwin 10.x-23.x (Mac OS X 10.6-11 and macOS 10.12-14.0)])
+          AC_MSG_ERROR([Valgrind works on Darwin 10.x-24.x (Mac OS X 10.6-11 and macOS 10.12-15.0)])
           ;;
       esac
       AC_MSG_RESULT([${xcodeversion}])
@@ -711,7 +787,7 @@ case "${host_os}" in
         DEFAULT_SUPP="$srcdir/solaris12.supp ${DEFAULT_SUPP}"
         ;;
 
-     *) 
+     *)
 	AC_MSG_RESULT([no (${host_os})])
 	AC_MSG_ERROR([Valgrind is operating system specific. Sorry.])
 	;;
@@ -804,7 +880,7 @@ AC_SUBST(VGCONF_PLATFORM_SEC_CAPS)
 
 AC_MSG_CHECKING([for a supported CPU/OS combination])
 
-# NB.  The load address for a given platform may be specified in more 
+# NB.  The load address for a given platform may be specified in more
 # than one place, in some cases, depending on whether we're doing a biarch,
 # 32-bit only or 64-bit only build.  eg see case for amd64-linux below.
 # Be careful to give consistent values in all subcases.  Also, all four
@@ -948,6 +1024,17 @@ case "$ARCH_MAX-$VGCONF_OS" in
         valt_load_address_sec_inner="0x28000000"
         AC_MSG_RESULT([ok (${ARCH_MAX}-${VGCONF_OS})])
         ;;
+     arm64-freebsd)
+        VGCONF_ARCH_PRI="arm64"
+        VGCONF_ARCH_SEC=""
+        VGCONF_PLATFORM_PRI_CAPS="ARM64_FREEBSD"
+        VGCONF_PLATFORM_SEC_CAPS=""
+        valt_load_address_pri_norml="0x38000000"
+        valt_load_address_pri_inner="0x28000000"
+        valt_load_address_sec_norml="0xUNSET"
+        valt_load_address_sec_inner="0xUNSET"
+        AC_MSG_RESULT([ok (${ARCH_MAX}-${VGCONF_OS})])
+        ;;
      # Darwin gets identified as 32-bit even when it supports 64-bit.
      # (Not sure why, possibly because 'uname' returns "i386"?)  Just about
      # all Macs support both 32-bit and 64-bit, so we just build both.  If
@@ -984,7 +1071,7 @@ case "$ARCH_MAX-$VGCONF_OS" in
 	fi
         AC_MSG_RESULT([ok (${ARCH_MAX}-${VGCONF_OS})])
 	;;
-     arm-linux) 
+     arm-linux)
 	VGCONF_ARCH_PRI="arm"
 	VGCONF_PLATFORM_PRI_CAPS="ARM_LINUX"
 	VGCONF_PLATFORM_SEC_CAPS=""
@@ -1036,7 +1123,7 @@ case "$ARCH_MAX-$VGCONF_OS" in
         valt_load_address_sec_inner="0xUNSET"
         AC_MSG_RESULT([ok (${ARCH_MAX}-${VGCONF_OS})])
         ;;
-     mips32-linux) 
+     mips32-linux)
         VGCONF_ARCH_PRI="mips32"
         VGCONF_ARCH_SEC=""
         VGCONF_PLATFORM_PRI_CAPS="MIPS32_LINUX"
@@ -1145,7 +1232,7 @@ esac
 
 # Set up VGCONF_ARCHS_INCLUDE_<arch>.  Either one or two of these become
 # defined.
-AM_CONDITIONAL(VGCONF_ARCHS_INCLUDE_X86,   
+AM_CONDITIONAL(VGCONF_ARCHS_INCLUDE_X86,
                test x$VGCONF_PLATFORM_PRI_CAPS = xX86_LINUX \
                  -o x$VGCONF_PLATFORM_SEC_CAPS = xX86_LINUX \
                  -o x$VGCONF_PLATFORM_PRI_CAPS = xX86_FREEBSD \
@@ -1154,50 +1241,51 @@ AM_CONDITIONAL(VGCONF_ARCHS_INCLUDE_X86,
                  -o x$VGCONF_PLATFORM_SEC_CAPS = xX86_DARWIN \
                  -o x$VGCONF_PLATFORM_PRI_CAPS = xX86_SOLARIS \
                  -o x$VGCONF_PLATFORM_SEC_CAPS = xX86_SOLARIS )
-AM_CONDITIONAL(VGCONF_ARCHS_INCLUDE_AMD64, 
+AM_CONDITIONAL(VGCONF_ARCHS_INCLUDE_AMD64,
                test x$VGCONF_PLATFORM_PRI_CAPS = xAMD64_LINUX \
                  -o x$VGCONF_PLATFORM_PRI_CAPS = xAMD64_FREEBSD \
                  -o x$VGCONF_PLATFORM_PRI_CAPS = xAMD64_DARWIN \
                  -o x$VGCONF_PLATFORM_PRI_CAPS = xAMD64_SOLARIS )
-AM_CONDITIONAL(VGCONF_ARCHS_INCLUDE_PPC32, 
-               test x$VGCONF_PLATFORM_PRI_CAPS = xPPC32_LINUX \ 
+AM_CONDITIONAL(VGCONF_ARCHS_INCLUDE_PPC32,
+               test x$VGCONF_PLATFORM_PRI_CAPS = xPPC32_LINUX \
                  -o x$VGCONF_PLATFORM_SEC_CAPS = xPPC32_LINUX )
-AM_CONDITIONAL(VGCONF_ARCHS_INCLUDE_PPC64, 
+AM_CONDITIONAL(VGCONF_ARCHS_INCLUDE_PPC64,
                test x$VGCONF_PLATFORM_PRI_CAPS = xPPC64BE_LINUX \
                  -o x$VGCONF_PLATFORM_PRI_CAPS = xPPC64LE_LINUX )
-AM_CONDITIONAL(VGCONF_ARCHS_INCLUDE_ARM,   
+AM_CONDITIONAL(VGCONF_ARCHS_INCLUDE_ARM,
                test x$VGCONF_PLATFORM_PRI_CAPS = xARM_LINUX \
                  -o x$VGCONF_PLATFORM_SEC_CAPS = xARM_LINUX )
-AM_CONDITIONAL(VGCONF_ARCHS_INCLUDE_ARM64, 
-               test x$VGCONF_PLATFORM_PRI_CAPS = xARM64_LINUX )
+AM_CONDITIONAL(VGCONF_ARCHS_INCLUDE_ARM64,
+               test x$VGCONF_PLATFORM_PRI_CAPS = xARM64_LINUX \
+               -o x$VGCONF_PLATFORM_PRI_CAPS = xARM64_FREEBSD )
 AM_CONDITIONAL(VGCONF_ARCHS_INCLUDE_S390X,
                test x$VGCONF_PLATFORM_PRI_CAPS = xS390X_LINUX )
 AM_CONDITIONAL(VGCONF_ARCHS_INCLUDE_MIPS32,
                test x$VGCONF_PLATFORM_PRI_CAPS = xMIPS32_LINUX \
                  -o x$VGCONF_PLATFORM_SEC_CAPS = xMIPS32_LINUX )
 AM_CONDITIONAL(VGCONF_ARCHS_INCLUDE_MIPS64,
-               test x$VGCONF_PLATFORM_PRI_CAPS = xMIPS64_LINUX ) 
+               test x$VGCONF_PLATFORM_PRI_CAPS = xMIPS64_LINUX )
 AM_CONDITIONAL(VGCONF_ARCHS_INCLUDE_NANOMIPS,
                test x$VGCONF_PLATFORM_PRI_CAPS = xNANOMIPS_LINUX )
 
 # Set up VGCONF_PLATFORMS_INCLUDE_<platform>.  Either one or two of these
 # become defined.
-AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_X86_LINUX,   
+AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_X86_LINUX,
                test x$VGCONF_PLATFORM_PRI_CAPS = xX86_LINUX \
                  -o x$VGCONF_PLATFORM_SEC_CAPS = xX86_LINUX)
-AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_AMD64_LINUX, 
+AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_AMD64_LINUX,
                test x$VGCONF_PLATFORM_PRI_CAPS = xAMD64_LINUX)
-AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_PPC32_LINUX, 
-               test x$VGCONF_PLATFORM_PRI_CAPS = xPPC32_LINUX \ 
+AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_PPC32_LINUX,
+               test x$VGCONF_PLATFORM_PRI_CAPS = xPPC32_LINUX \
                  -o x$VGCONF_PLATFORM_SEC_CAPS = xPPC32_LINUX)
 AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_PPC64BE_LINUX,
                test x$VGCONF_PLATFORM_PRI_CAPS = xPPC64BE_LINUX)
 AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_PPC64LE_LINUX,
                test x$VGCONF_PLATFORM_PRI_CAPS = xPPC64LE_LINUX)
-AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_ARM_LINUX, 
+AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_ARM_LINUX,
                test x$VGCONF_PLATFORM_PRI_CAPS = xARM_LINUX \
                  -o x$VGCONF_PLATFORM_SEC_CAPS = xARM_LINUX)
-AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_ARM64_LINUX, 
+AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_ARM64_LINUX,
                test x$VGCONF_PLATFORM_PRI_CAPS = xARM64_LINUX)
 AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_S390X_LINUX,
                test x$VGCONF_PLATFORM_PRI_CAPS = xS390X_LINUX \
@@ -1212,12 +1300,14 @@ AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_NANOMIPS_LINUX,
 AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_X86_FREEBSD,
                test x$VGCONF_PLATFORM_PRI_CAPS = xX86_FREEBSD \
                  -o x$VGCONF_PLATFORM_SEC_CAPS = xX86_FREEBSD)
-AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_AMD64_FREEBSD, 
+AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_AMD64_FREEBSD,
                test x$VGCONF_PLATFORM_PRI_CAPS = xAMD64_FREEBSD)
+AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_ARM64_FREEBSD,
+               test x$VGCONF_PLATFORM_PRI_CAPS = xARM64_FREEBSD)
 AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_X86_DARWIN,
                test x$VGCONF_PLATFORM_PRI_CAPS = xX86_DARWIN \
                  -o x$VGCONF_PLATFORM_SEC_CAPS = xX86_DARWIN)
-AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_AMD64_DARWIN, 
+AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_AMD64_DARWIN,
                test x$VGCONF_PLATFORM_PRI_CAPS = xAMD64_DARWIN)
 AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_X86_SOLARIS,
                test x$VGCONF_PLATFORM_PRI_CAPS = xX86_SOLARIS \
@@ -1227,7 +1317,7 @@ AM_CONDITIONAL(VGCONF_PLATFORMS_INCLUDE_AMD64_SOLARIS,
 
 
 # Similarly, set up VGCONF_OS_IS_<os>.  Exactly one of these becomes defined.
-# Relies on the assumption that the primary and secondary targets are 
+# Relies on the assumption that the primary and secondary targets are
 # for the same OS, so therefore only necessary to test the primary.
 AM_CONDITIONAL(VGCONF_OS_IS_LINUX,
                test x$VGCONF_PLATFORM_PRI_CAPS = xX86_LINUX \
@@ -1243,7 +1333,8 @@ AM_CONDITIONAL(VGCONF_OS_IS_LINUX,
                  -o x$VGCONF_PLATFORM_PRI_CAPS = xNANOMIPS_LINUX)
 AM_CONDITIONAL(VGCONF_OS_IS_FREEBSD,
                test x$VGCONF_PLATFORM_PRI_CAPS = xX86_FREEBSD \
-                 -o x$VGCONF_PLATFORM_PRI_CAPS = xAMD64_FREEBSD)
+                 -o x$VGCONF_PLATFORM_PRI_CAPS = xAMD64_FREEBSD \
+                 -o x$VGCONF_PLATFORM_PRI_CAPS = xARM64_FREEBSD)
 AM_CONDITIONAL(VGCONF_OS_IS_DARWIN,
                test x$VGCONF_PLATFORM_PRI_CAPS = xX86_DARWIN \
                  -o x$VGCONF_PLATFORM_PRI_CAPS = xAMD64_DARWIN)
@@ -1253,6 +1344,7 @@ AM_CONDITIONAL(VGCONF_OS_IS_SOLARIS,
 AM_CONDITIONAL(VGCONF_OS_IS_DARWIN_OR_FREEBSD,
                test x$VGCONF_PLATFORM_PRI_CAPS = xX86_FREEBSD \
                  -o x$VGCONF_PLATFORM_PRI_CAPS = xAMD64_FREEBSD \
+                 -o x$VGCONF_PLATFORM_PRI_CAPS = xARM64_FREEBSD \
                  -o x$VGCONF_PLATFORM_PRI_CAPS = xX86_DARWIN \
                  -o x$VGCONF_PLATFORM_PRI_CAPS = xAMD64_DARWIN)
 
@@ -1261,44 +1353,6 @@ AM_CONDITIONAL(VGCONF_OS_IS_DARWIN_OR_FREEBSD,
 # there is a secondary target.
 AM_CONDITIONAL(VGCONF_HAVE_PLATFORM_SEC,
                test x$VGCONF_PLATFORM_SEC_CAPS != x)
-
-# macOS: Detect the Xcode SDK path and inject it in different tools
-AM_COND_IF([VGCONF_OS_IS_DARWIN],
-[
-  AC_ARG_VAR([DEVELOPER_DIR],[Overrides the active developer directory (used in gcc, xcrun, etc)])
-  AC_CHECK_PROG([XCRUN], [xcrun], [yes], [no])
-
-  AC_MSG_CHECKING([for Xcode SDK and includes])
-  AC_ARG_WITH([xcode-path],
-  [  --with-xcode-path=PATH      Specify path for Xcode SDK],
-  [
-      # Set defaults in case `xcrun` fails
-      xcodedir="$withval"
-      xcodedir_inc="$xcodedir/usr/include"
-      # Defining DEVELOPER_DIR will override which version of gcc, xcrun, etc is being used
-      export DEVELOPER_DIR="$xcodedir"
-  ],
-  [
-      # Use system defaults, in case `xcrun` fails
-      xcodedir="active developer directory"
-      xcodedir_inc="/usr/include"
-  ])
-
-  if test "x$XCRUN" != "xno"; then
-    xcrundir=`xcrun --sdk macosx --show-sdk-path 2>/dev/null`
-    if test ! -z "$xcrundir"; then
-        xcodedir="$xcrundir"
-        xcodedir_inc="$xcodedir/usr/include"
-    fi
-  else
-    AC_MSG_WARN([Couldn't find xcrun, most Xcode-related autodetection will be disabled and the build might fail])
-  fi
-  AC_MSG_RESULT([$xcodedir (includes: $xcodedir_inc)])
-
-  # Substitute the Xcode include path detected earlier
-  AC_SUBST(XCODE_INC_DIR, [$xcodedir_inc])
-])
-
 
 #----------------------------------------------------------------------------
 # Inner Valgrind?
@@ -1309,7 +1363,7 @@ AM_COND_IF([VGCONF_OS_IS_DARWIN],
 AC_SUBST(VALT_LOAD_ADDRESS_PRI)
 AC_SUBST(VALT_LOAD_ADDRESS_SEC)
 AC_CACHE_CHECK([for use as an inner Valgrind], vg_cv_inner,
-   [AC_ARG_ENABLE(inner, 
+   [AC_ARG_ENABLE(inner,
       [  --enable-inner          enables self-hosting],
       [vg_cv_inner=$enableval],
       [vg_cv_inner=no])])
@@ -1328,7 +1382,7 @@ fi
 # Check whether we should build with the undefined beahviour sanitiser.
 
 AC_CACHE_CHECK([for using the undefined behaviour sanitiser], vg_cv_ubsan,
-   [AC_ARG_ENABLE(ubsan, 
+   [AC_ARG_ENABLE(ubsan,
       [  --enable-ubsan          enables the undefined behaviour sanitiser],
       [vg_cv_ubsan=$enableval],
       [vg_cv_ubsan=no])])
@@ -1342,23 +1396,6 @@ AC_ARG_WITH(tmpdir,
    tmpdir="/tmp")
 AC_DEFINE_UNQUOTED(VG_TMPDIR, "$tmpdir", [Temporary files directory])
 AC_SUBST(VG_TMPDIR, [$tmpdir])
-
-#----------------------------------------------------------------------------
-# Where to install gdb scripts, defaults to VG_LIBDIR (pkglibexecdir)
-#----------------------------------------------------------------------------
-AC_MSG_CHECKING([where gdb scripts are installed])
-AC_ARG_WITH(gdbscripts-dir,
-   [  --with-gdbscripts-dir=PATH  Specify path to install gdb scripts],
-   [gdbscriptsdir=${withval}],
-   [gdbscriptsdir=${libexecdir}/valgrind])
-AC_MSG_RESULT([$gdbscriptsdir])
-if test "x$gdbscriptsdir" != "xno"; then
-  AC_SUBST(VG_GDBSCRIPTS_DIR, [$gdbscriptsdir])
-  AM_CONDITIONAL(GDBSCRIPTS, true)
-else
-  AC_SUBST(VG_GDBSCRIPTS_DIR, [])
-  AM_CONDITIONAL(GDBSCRIPTS, false)
-fi
 
 #----------------------------------------------------------------------------
 # Where to install gdb scripts, defaults to VG_LIBDIR (pkglibexecdir)
@@ -1804,7 +1841,7 @@ AC_MSG_RESULT([no])
 
 AC_CHECK_MEMBER([pthread_mutex_t.__m_kind],
 	        [AC_DEFINE([HAVE_PTHREAD_MUTEX_T__M_KIND],
-		           1,                                   
+		           1,
 			   [Define to 1 if pthread_mutex_t has a member called __m_kind.])
                 ],
 		[],
@@ -2217,7 +2254,7 @@ safe_CXXFLAGS=$CXXFLAGS
 CXXFLAGS=-std=c++0x
 
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([
-#include <thread> 
+#include <thread>
 ])],
 [
 ac_cxx_can_include_thread_header=yes
@@ -2239,7 +2276,7 @@ safe_CXXFLAGS=$CXXFLAGS
 CXXFLAGS=-std=c++0x
 
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([
-#include <condition_variable> 
+#include <condition_variable>
 ])],
 [
 ac_cxx_can_include_condition_variable_header=yes
@@ -2636,7 +2673,7 @@ FLAG_MLONG_DOUBLE_128="-mlong-double-128"
 AC_SUBST(FLAG_MLONG_DOUBLE_128)
 
 # does this toolchain support lto ?
-# Not checked for if --enable-lto=no was given, or if LTO_AR or LTO_RANLIG
+# Not checked for if --enable-lto=no was given, or if LTO_AR or LTO_RANLIB
 # are not defined
 # If not enable-lto=* arg is provided, default to no, as  lto builds are
 # a lot slower, and so not appropriate for Valgrind developments.
@@ -2650,9 +2687,7 @@ AC_CACHE_CHECK([for using the link time optimisation], vg_cv_lto,
 if test "x${vg_cv_lto}" != "xno" -a "x${LTO_AR}" != "x" -a "x${LTO_RANLIB}" != "x"; then
 AC_MSG_CHECKING([if toolchain accepts lto])
 safe_CFLAGS=$CFLAGS
-TEST_LTO_CFLAGS="-flto -flto-partition=one -fuse-linker-plugin"
-# Note : using 'one' partition is giving a slightly smaller/faster memcheck
-# and ld/lto-trans1 still needs a reasonable memory (about 0.5GB) when linking.
+TEST_LTO_CFLAGS="-flto -fuse-linker-plugin"
 CFLAGS="$TEST_LTO_CFLAGS -Werror"
 
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
@@ -2758,6 +2793,9 @@ AC_GCC_WARNING_SUBST_NO([builtin-memcpy-chk-size], [FLAG_W_NO_BUILTIN_MEMCPY_CHK
 AC_GCC_WARNING_SUBST_NO([incompatible-pointer-types-discards-qualifiers], [FLAG_W_NO_INCOMPATIBLE_POINTER_TYPES_DISCARDS_QUALIFIERS])
 AC_GCC_WARNING_SUBST_NO([suspicious-bzero], [FLAG_W_NO_SUSPICIOUS_BZERO])
 AC_GCC_WARNING_SUBST_NO([attributes], [FLAG_W_NO_ATTRIBUTES])
+AC_GCC_WARNING_SUBST_NO([unused-result], [FLAG_W_NO_UNUSED_RESULT])
+AC_GCC_WARNING_SUBST_NO([infinite-recursion], [FLAG_W_NO_INFINITE_RECURSION])
+AC_GCC_WARNING_SUBST_NO([deprecated], [FLAG_W_NO_DEPRECATED])
 
 AC_GCC_WARNING_SUBST_NO_VAL([alloc-size-larger-than], [1677216], [FLAG_W_NO_ALLOC_SIZE_LARGER_THAN])
 
@@ -3345,8 +3383,8 @@ fi
 AC_MSG_CHECKING([if x86/amd64 assembler speaks SSE3])
 
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
-  do { long long int x; 
-     __asm__ __volatile__("fisttpq (%0)" : :"r"(&x) ); } 
+  do { long long int x;
+     __asm__ __volatile__("fisttpq (%0)" : :"r"(&x) ); }
   while (0)
 ]])], [
 ac_have_as_sse3=yes
@@ -3367,7 +3405,7 @@ AC_MSG_CHECKING([if x86/amd64 assembler speaks SSSE3])
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -msse -Werror"
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
-  do { long long int x; 
+  do { long long int x;
    __asm__ __volatile__(
       "pabsb (%0),%%xmm7" : : "r"(&x) : "xmm7" ); }
   while (0)
@@ -3454,7 +3492,7 @@ AM_CONDITIONAL(BUILD_FMA4_TESTS, test x$ac_have_as_vfmaddpd = xyes)
 AC_MSG_CHECKING([if x86/amd64 assembler supports 'lzcnt'])
 
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
-  do { 		 
+  do {
       __asm__ __volatile__("lzcnt %%rax,%%rax" : : : "rax");
   } while (0)
 ]])], [
@@ -3474,7 +3512,7 @@ AM_CONDITIONAL([BUILD_LZCNT_TESTS], [test x$ac_have_as_lzcnt = xyes])
 AC_MSG_CHECKING([if x86/amd64 assembler supports 'loopnel'])
 
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
-  do { 		 
+  do {
       __asm__ __volatile__("1:  loopnel 1b\n");
   } while (0)
 ]])], [
@@ -3494,7 +3532,7 @@ AM_CONDITIONAL([BUILD_LOOPNEL_TESTS], [test x$ac_have_as_loopnel = xyes])
 AC_MSG_CHECKING([if x86/amd64 assembler supports 'addr32'])
 
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
-  do { 		 
+  do {
       asm volatile ("addr32 rep movsb");
   } while (0)
 ]])], [
@@ -3514,11 +3552,11 @@ AM_CONDITIONAL([BUILD_ADDR32_TESTS], [test x$ac_have_as_addr32 = xyes])
 AC_MSG_CHECKING([if x86/amd64 assembler speaks SSE4.2])
 
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
-  do { long long int x; 
+  do { long long int x;
    __asm__ __volatile__(
       "crc32q %%r15,%%r15" : : : "r15" );
    __asm__ __volatile__(
-      "pblendvb (%%rcx), %%xmm11" : : : "memory", "xmm11"); 
+      "pblendvb (%%rcx), %%xmm11" : : : "memory", "xmm11");
    __asm__ __volatile__(
       "aesdec %%xmm2, %%xmm1" : : : "xmm2", "xmm1"); }
   while (0)
@@ -3539,7 +3577,7 @@ AM_CONDITIONAL(BUILD_SSE42_TESTS, test x$ac_have_as_sse42 = xyes)
 AC_MSG_CHECKING([if x86/amd64 assembler speaks AVX])
 
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
-  do { long long int x; 
+  do { long long int x;
    __asm__ __volatile__(
       "vmovupd (%%rsp), %%ymm7" : : : "xmm7" );
    __asm__ __volatile__(
@@ -3562,7 +3600,7 @@ AM_CONDITIONAL(BUILD_AVX_TESTS, test x$ac_have_as_avx = xyes)
 AC_MSG_CHECKING([if x86/amd64 assembler speaks AVX2])
 
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
-  do { long long int x; 
+  do { long long int x;
    __asm__ __volatile__(
       "vpsravd (%%rsp), %%ymm8, %%ymm7" : : : "xmm7", "xmm8" );
    __asm__ __volatile__(
@@ -3771,7 +3809,7 @@ AM_CONDITIONAL(BUILD_F16C_TESTS, test x$ac_have_as_f16c = xyes)
 AC_MSG_CHECKING([if x86/amd64 assembler knows the MOVBE insn])
 
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
-  do { long long int x; 
+  do { long long int x;
    __asm__ __volatile__(
       "movbe (%%rsp), %%r15" : : : "memory", "r15" ); }
   while (0)
@@ -4175,7 +4213,7 @@ AC_MSG_RESULT([no])
 #
 AC_MSG_CHECKING([for the new `lwp_sigqueue' syscall (Solaris-specific)])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#include <sys/syscall.h> 
+#include <sys/syscall.h>
 ]], [[
   return !SYS_lwp_sigqueue;
 ]])], [
@@ -5097,6 +5135,7 @@ AC_CHECK_FUNCS([     \
         close_range  \
         wcsncpy      \
         free_aligned_sized \
+	sbrk         \
         wcpncpy      \
         wcsxfrm      \
         sem_timedwait \
@@ -5141,6 +5180,8 @@ AM_CONDITIONAL([HAVE_STRLCPY],
                [test x$ac_cv_func_strlcpy = xyes])
 AM_CONDITIONAL([HAVE_FREE_ALIGNED_SIZED],
                [test x$ac_cv_func_free_aligned_sized = xyes])
+AM_CONDITIONAL([HAVE_SBRK],
+               [test x$ac_cv_func_sbrk = xyes])
 AM_CONDITIONAL([HAVE_WCPNCPY],
                [test x$ac_cv_func_wcpncpy = xyes])
 AM_CONDITIONAL([HAVE_WCSXFRM],
@@ -5162,7 +5203,7 @@ fi
 #----------------------------------------------------------------------------
 # Do we have a useable MPI setup on the primary and/or secondary targets?
 # On Linux, by default, assumes mpicc and -m32/-m64
-# Note: this is a kludge in that it assumes the specified mpicc 
+# Note: this is a kludge in that it assumes the specified mpicc
 # understands -m32/-m64 regardless of what is specified using
 # --with-mpicc=.
 AC_PATH_PROG([MPI_CC], [mpicc], [mpicc],
@@ -5181,6 +5222,7 @@ elif test x$VGCONF_PLATFORM_PRI_CAPS = xAMD64_LINUX \
        -o x$VGCONF_PLATFORM_PRI_CAPS = xAMD64_FREEBSD \
        -o x$VGCONF_PLATFORM_PRI_CAPS = xPPC64_LINUX \
        -o x$VGCONF_PLATFORM_PRI_CAPS = xARM64_LINUX \
+       -o x$VGCONF_PLATFORM_PRI_CAPS = xARM64_FREEBSD \
        -o x$VGCONF_PLATFORM_PRI_CAPS = xMIPS64_LINUX \
        -o x$VGCONF_PLATFORM_PRI_CAPS = xS390X_LINUX ; then
   mflag_primary=$FLAG_M64
@@ -5247,7 +5289,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[
   int r = MPI_Init(NULL,NULL);
   r |= MPI_Type_get_envelope( MPI_INT, &ni, &na, &nd, &comb );
   r |= MPI_Finalize();
-  return r; 
+  return r;
 ]])], [
 ac_have_mpi2_pri=yes
 AC_MSG_RESULT([yes, $MPI_CC])
@@ -5284,7 +5326,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[
   int r = MPI_Init(NULL,NULL);
   r |= MPI_Type_get_envelope( MPI_INT, &ni, &na, &nd, &comb );
   r |= MPI_Finalize();
-  return r; 
+  return r;
 ]])], [
 ac_have_mpi2_sec=yes
 AC_MSG_RESULT([yes, $MPI_CC])
@@ -5296,6 +5338,27 @@ CC=$saved_CC
 CFLAGS=$saved_CFLAGS
 LDFLAGS="$saved_LDFLAGS"
 AM_CONDITIONAL(BUILD_MPIWRAP_SEC, test x$ac_have_mpi2_sec = xyes)
+
+#----------------------------------------------------------------------------
+# static libc check
+#----------------------------------------------------------------------------
+AC_MSG_CHECKING([if static libc is available])
+
+saved_LDFLAGS="$LDFLAGS"
+LDFLAGS="-nostdlib -lc -static"
+AC_LINK_IFELSE([AC_LANG_SOURCE([[
+int main(void)
+{
+}
+]])], [
+ac_have_static_libc=yes
+AC_MSG_RESULT([yes])
+], [
+ac_have_static_libc=no
+AC_MSG_RESULT([no])
+])
+LDFLAGS="$saved_LDFLAGS"
+AM_CONDITIONAL(HAVE_STATIC_LIBC, test x$ac_have_static_libc = xyes)
 
 
 #----------------------------------------------------------------------------
@@ -5310,7 +5373,7 @@ AM_CONDITIONAL(BUILD_MPIWRAP_SEC, test x$ac_have_mpi2_sec = xyes)
 # in a situation (eg) where, on amd64-linux, the test for Boost checks
 # for usable 64-bit Boost facilities, but because we are doing a 32-bit
 # only build (meaning, the primary target is x86-linux), the build
-# of the regtest programs that use Boost fails, because they are 
+# of the regtest programs that use Boost fails, because they are
 # build as 32-bit (IN THIS EXAMPLE).
 #
 # Hence: ALWAYS USE $mflag_primary FOR CONFIGURE TESTS FOR FACILITIES
@@ -5364,7 +5427,7 @@ safe_CFLAGS=$CFLAGS
 CFLAGS="-fopenmp $mflag_primary -Werror"
 
 AC_LINK_IFELSE([AC_LANG_SOURCE([
-#include <omp.h> 
+#include <omp.h>
 int main(int argc, char** argv)
 {
   omp_set_dynamic(0);
@@ -5711,6 +5774,23 @@ AC_MSG_RESULT([no])
 AM_CONDITIONAL(HAVE_THRD_CREATE, test x$ac_cxx_have_thrd_create = xyes)
 
 
+# Check arm64 sha3
+safe_CFLAGS=$CFLAGS
+CFLAGS="${CFLAGS} -march=armv8.2-a+sha3"
+AC_MSG_CHECKING([for sha3])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
+   return 0;
+]])],
+[
+ac_have_sha3=yes
+AC_MSG_RESULT([yes])
+], [
+ac_have_sha3=no
+AC_MSG_RESULT([no])
+])
+
+AM_CONDITIONAL(HAVE_SHA3, test x$ac_have_sha3 = xyes)
+CFLAGS=$safe_CFLAGS
 
 #----------------------------------------------------------------------------
 # Ok.  We're done checking.
@@ -5718,7 +5798,7 @@ AM_CONDITIONAL(HAVE_THRD_CREATE, test x$ac_cxx_have_thrd_create = xyes)
 
 # Nb: VEX/Makefile is generated from Makefile.vex.in.
 AC_CONFIG_FILES([
-   Makefile 
+   Makefile
    VEX/Makefile:Makefile.vex.in
    valgrind.spec
    valgrind.pc
@@ -5726,18 +5806,18 @@ AC_CONFIG_FILES([
    glibc-2.X-helgrind.supp
    glibc-2.X-drd.supp
    include/valgrind.h
-   docs/Makefile 
+   docs/Makefile
    docs/xml/vg-entities.xml
-   tests/Makefile 
-   tests/vg_regtest 
-   perf/Makefile 
+   tests/Makefile
+   tests/vg_regtest
+   perf/Makefile
    perf/vg_perf
    gdbserver_tests/Makefile
    gdbserver_tests/solaris/Makefile
-   include/Makefile 
+   include/Makefile
    auxprogs/Makefile
    mpi/Makefile
-   coregrind/Makefile 
+   coregrind/Makefile
    memcheck/Makefile
    memcheck/tests/Makefile
    memcheck/tests/common/Makefile
@@ -5836,6 +5916,8 @@ AC_CONFIG_FILES([memcheck/tests/filter_dw4],
                 [chmod +x memcheck/tests/filter_dw4])
 AC_CONFIG_FILES([memcheck/tests/filter_overlaperror],
                 [chmod +x memcheck/tests/filter_overlaperror])
+AC_CONFIG_FILES([memcheck/tests/filter_supp],
+                [chmod +x memcheck/tests/filter_supp])
 AC_CONFIG_FILES([memcheck/tests/x86/filter_pushfpopf],
                 [chmod +x memcheck/tests/x86/filter_pushfpopf])
 AC_CONFIG_FILES([gdbserver_tests/filter_gdb],

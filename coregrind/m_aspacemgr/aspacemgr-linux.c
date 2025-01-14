@@ -859,12 +859,20 @@ static void sync_check_mapping_callback ( Addr addr, SizeT len, UInt prot,
       if (nsegments[i].hasW) seg_prot |= VKI_PROT_WRITE;
       if (nsegments[i].hasX) seg_prot |= VKI_PROT_EXEC;
 
-#if defined(VGO_darwin) || defined(VGO_freebsd)
+#if defined(VGO_darwin)
       // GrP fixme kernel info doesn't have dev/inode
       cmp_devino = False;
 
       // GrP fixme V and kernel don't agree on offsets
       cmp_offsets = False;
+#elif defined(VGO_freebsd)
+      cmp_offsets
+         = nsegments[i].kind == SkFileC || nsegments[i].kind == SkFileV;
+      cmp_offsets &= ignore_offset;
+
+      cmp_devino
+         = nsegments[i].dev != 0 || nsegments[i].ino != 0;
+      cmp_devino &= ignore_offset;
 #else
       cmp_offsets
          = nsegments[i].kind == SkFileC || nsegments[i].kind == SkFileV;
@@ -883,6 +891,19 @@ static void sync_check_mapping_callback ( Addr addr, SizeT len, UInt prot,
       /* hack apparently needed on MontaVista Linux */
       if (filename && VG_(strstr)(filename, "/.lib-ro/"))
          cmp_devino = False;
+
+      /* On linux systems we want to avoid dev/inode check on btrfs,
+         we can use the statfs call for that, except on nanomips
+         (which also doesn't have a sys_fstatfs syswrap).
+         See https://bugs.kde.org/show_bug.cgi?id=317127 */
+#if !defined(VGP_nanomips_linux)
+      struct vki_statfs statfs = {0};
+      SysRes res = VG_(do_syscall2)(__NR_statfs, (UWord)filename,
+                                    (UWord)&statfs);
+      if (!sr_isError(res) && statfs.f_type == VKI_BTRFS_SUPER_MAGIC) {
+         cmp_devino = False;
+      }
+#endif
 #endif
       
       /* If we are doing sloppy execute permission checks then we
@@ -3966,6 +3987,12 @@ static char* maybe_merge_procmap_stack(char* p,  struct vki_kinfo_vmentry *kve, 
    if ( *pEndPlusOne + kern_sgrowsiz - kve->kve_start == 64ULL*1024ULL*1024ULL) {
       return p;
    }
+#elif defined(VGP_arm64_freebsd)
+   if ( *pEndPlusOne + kern_sgrowsiz - kve->kve_start == 1024ULL*1024ULL*1024ULL) {
+      return p;
+   }
+#else
+#    error Unknown platform
 #endif
 
    while (kve_next->kve_protection & VKI_KVME_PROT_READ &&
@@ -4014,7 +4041,7 @@ static char* maybe_merge_procmap_stack(char* p,  struct vki_kinfo_vmentry *kve, 
  * the RW PT_LOAD.
  *
  * For instance, objdump -p for memcheck-amd64-freebsd contains
- *    LOAD off    0x0000000000000000 vaddr 0x0000000038000000 paddr 0x0000000038000000 align 2**12
+ *     LOAD off    0x0000000000000000 vaddr 0x0000000038000000 paddr 0x0000000038000000 align 2**12
  *         filesz 0x00000000000c5124 memsz 0x00000000000c5124 flags r--
  *    LOAD off    0x00000000000c5130 vaddr 0x00000000380c6130 paddr 0x00000000380c6130 align 2**12
  *         filesz 0x00000000001b10df memsz 0x00000000001b10df flags r-x

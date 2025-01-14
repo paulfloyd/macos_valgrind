@@ -91,11 +91,13 @@ EXTRA_DIST =                                        \
 	bug322621.vgtest			    \
 	bug322621.stderr.exp			    \
 	bar_bad.stderr.exp			    \
+	bar_bad.stderr.exp-no-barrier		    \
 	bar_bad.stderr.exp-nohang		    \
 	bar_bad.stderr.exp-solaris		    \
 	bar_bad.stderr.exp-freebsd		    \
 	bar_bad.vgtest				    \
 	bar_bad_xml.stderr.exp			    \
+	bar_bad_xml.stderr.exp-no-barrier	    \
 	bar_bad_xml.stderr.exp-nohang		    \
 	bar_bad_xml.stderr.exp-solaris		    \
 	bar_bad_xml.stderr.exp-freebsd		    \
@@ -430,7 +432,6 @@ check_PROGRAMS =      \
   pth_detached3       \
   pth_inconsistent_cond_wait \
   pth_mutex_reinit    \
-  pth_mutex_signal    \
   pth_process_shared_mutex   \
   recursive_mutex     \
   rwlock_race         \
@@ -528,7 +529,8 @@ check_PROGRAMS += thrd_create
 endif
 
 if !VGCONF_OS_IS_DARWIN
-check_PROGRAMS += sem_wait
+# pth_mutex_signal is disabled on macOS as it doesn't support real-time signals
+check_PROGRAMS += sem_wait pth_mutex_signal
 endif
 
 if VGCONF_OS_IS_FREEBSD

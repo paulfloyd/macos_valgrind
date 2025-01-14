@@ -1143,7 +1143,7 @@ STRNCPY(libsystemZucZddylib, __strncpy_chk)
 
 /* See https://bugs.kde.org/show_bug.cgi?id=402833
    why we disable the overlap check on x86_64.  */
-#if defined(VGP_amd64_linux)
+#if defined(VGP_amd64_linux) || defined(VGP_arm64_freebsd)
  #define MEMCPY(soname, fnname) \
    MEMMOVE_OR_MEMCPY(20180, soname, fnname, 0)
 #else
@@ -2373,9 +2373,9 @@ STRNCPY(libsystemZucZddylib, __strncpy_chk)
       \
       while (i-- > 0) \
          if ((*d++ = *s++) == x) { \
-            SizeT srclen = (i < len) ? i : len; \
+            SizeT srclen = len - i; \
             RECORD_COPY(srclen); \
-            if (is_overlap(dst, src, srclen, srclen)) \
+            if (is_overlap(dst, src, len, srclen)) \
                RECORD_OVERLAP_ERROR("memccpy", dst, src, len); \
             return d; \
          } \

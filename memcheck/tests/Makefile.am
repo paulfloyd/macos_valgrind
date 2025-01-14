@@ -92,7 +92,8 @@ dist_noinst_SCRIPTS = \
 noinst_SCRIPTS = \
 	filter_dw4 \
 	filter_overlaperror \
-	filter_stderr
+	filter_stderr \
+	filter_supp
 
 noinst_HEADERS = leak.h
 
@@ -174,15 +175,18 @@ EXTRA_DIST = \
 	sized_aligned_new_delete_misaligned2_supp.vgtest \
 		sized_aligned_new_delete_misaligned2_supp.supp \
 		sized_aligned_new_delete_misaligned2_supp.stderr.exp \
+		sized_aligned_new_delete_misaligned2_supp.stderr.exp-32 \
 	sized_aligned_new_delete_misaligned3_supp.vgtest \
 		sized_aligned_new_delete_misaligned3_supp.supp \
 		sized_aligned_new_delete_misaligned3_supp.stderr.exp \
+		sized_aligned_new_delete_misaligned3_supp.stderr.exp-32 \
 	new_aligned_delete_default.stderr.exp \
 	new_aligned_delete_default.stderr.exp_32 \
 		new_aligned_delete_default.vgtest \
 	new_delete_mismatch_size.stderr.exp \
 		new_delete_mismatch_size.vgtest \
 	new_delete_mismatch_size_supp.stderr.exp \
+	new_delete_mismatch_size_supp.stderr.exp-32 \
 		new_delete_mismatch_size_supp.vgtest \
 		new_delete_mismatch_size_supp.supp \
 	deep-backtrace.vgtest deep-backtrace.stderr.exp \
@@ -314,6 +318,7 @@ EXTRA_DIST = \
 	origin6-fp.stderr.exp-glibc25-amd64 \
 	origin6-fp.stderr.exp-glibc27-ppc64 \
 	overlap.stderr.exp overlap.stdout.exp overlap.vgtest \
+		overlap.stderr.exp-no_memcpy \
 	partiallydefinedeq.vgtest partiallydefinedeq.stderr.exp \
 	partiallydefinedeq.stderr.exp4 \
 	partiallydefinedeq.stderr.exp3 \
@@ -428,6 +433,7 @@ EXTRA_DIST = \
 	varinfo5.vgtest varinfo5.stdout.exp varinfo5.stderr.exp \
 		varinfo5.stderr.exp-ppc64 \
 		varinfo5.stderr.exp-freebsd \
+		varinfo5.stderr.exp-freebsd2 \
 	varinfo6.vgtest varinfo6.stdout.exp varinfo6.stderr.exp \
 		varinfo6.stderr.exp-ppc64 \
 	varinforestrict.vgtest varinforestrict.stderr.exp \
@@ -464,7 +470,6 @@ check_PROGRAMS = \
 	badpoll \
 	badrw \
 	big_blocks_freed_list \
-	brk2 \
 	buflen_check \
 	bug155125 \
 	bug287260 \
@@ -556,7 +561,9 @@ check_PROGRAMS += long_namespace_xml
 endif
 
 if DWARF4
+if HAVE_SBRK
 check_PROGRAMS += dw4
+endif
 endif
 
 bug464969_d_demangle_SOURCES = bug464969_d_demangle.cpp
@@ -576,6 +583,10 @@ if GZ_ZLIB_GNU
 check_PROGRAMS += cdebug_zlib_gnu
 cdebug_zlib_gnu_SOURCES = cdebug.c
 cdebug_zlib_gnu_CFLAGS = $(AM_CFLAGS) -g -gz=zlib-gnu @FLAG_W_NO_UNINITIALIZED@
+endif
+
+if HAVE_SBRK
+check_PROGRAMS += brk2
 endif
 
 if HAVE_ALIGNED_CXX_ALLOC
@@ -719,6 +730,9 @@ memalign_args_CFLAGS	= $(AM_CFLAGS) -std=gnu11
 memalign2_CFLAGS	= $(AM_CFLAGS) @FLAG_W_NO_NON_POWER_OF_TWO_ALIGNMENT@
 if VGCONF_OS_IS_SOLARIS
 memalign2_CFLAGS	+= -D__EXTENSIONS__
+posix_memalign_CFLAGS	= ${AM_CFLAGS} -D__EXTENSIONS__
+else
+posix_memalign_CFLAGS	= ${AM_CFLAGS}
 endif
 
 memcmptest_CFLAGS	= $(AM_CFLAGS) -fno-builtin-memcmp

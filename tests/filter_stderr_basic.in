@@ -12,7 +12,7 @@ SED=@SED@
 
 dir=`dirname $0`
 
-# Remove ==pid== and --pid-- and **pid** strings 
+# Remove ==pid== and --pid-- and **pid** strings
 perl -p -e 's/(==|--|\*\*)[0-9]{1,7}\1 //' |
 
 # Do NOT remove debug level output, i.e. lines beginning with --pid:
@@ -79,16 +79,7 @@ $SED '/warning: the debug information found in "[^"]*" does not match/d' |
 $SED '/warning: no debug symbols in executable/d' | # macOS
 
 # Suppress warnings from Dwarf reader
-$SED '/warning: evaluate_Dwarf3_Expr: unhandled DW_OP_/d' |
-
-# macOS address range warnings
-$SED '/Warning: set address range perms: large range/d' |
-
-# Remove macOS dsymutil
-$SED '/^run: \/usr\/bin\/dsymutil.*/d' |
-
-# Suppress Darwin dyld errors
-$SED '/^used_suppression:.*OSX.*dyld.*default.supp:*/d' |
+$SED '/warning: evaluate_Dwarf3_Expr: unhandled DW_OP_/d'
 
 # Suppress Darwin dyld errors
 $SED '/^used_suppression:.*OSX.*dyld.*default.supp:*/d'

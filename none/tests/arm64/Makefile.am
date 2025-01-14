@@ -1,12 +1,15 @@
 
 include $(top_srcdir)/Makefile.tool-tests.am
 
-dist_noinst_SCRIPTS = filter_stderr
+dist_noinst_SCRIPTS = filter_stderr filter_nan
 
 EXTRA_DIST = \
 	bug484426.stdout.exp bug484426.stderr.exp bug484426.vgtest \
+	bug489338.stdout.exp bug489338.stderr.exp bug489338.vgtest \
         crc32.stdout.exp crc32.stderr.exp crc32.vgtest \
         cvtf_imm.stdout.exp cvtf_imm.stderr.exp cvtf_imm.vgtest \
+	dc_cvax.vgtest dc_cvax.stderr.exp \
+	fcvta_s_u.vgtest fcvta_s_u.stderr.exp \
 	fp_and_simd.stdout.exp fp_and_simd.stderr.exp fp_and_simd.vgtest \
 	frinta_frintn.stderr.exp frinta_frintn.vgtest \
 	integer.stdout.exp integer.stderr.exp integer.vgtest \
@@ -21,12 +24,15 @@ EXTRA_DIST = \
 	ldxp_stxp_basisimpl.stdout.exp ldxp_stxp_basisimpl.stderr.exp \
 	ldxp_stxp_basisimpl.vgtest \
 	ldxp_stxp_fallbackimpl.stdout.exp ldxp_stxp_fallbackimpl.stderr.exp \
-	ldxp_stxp_fallbackimpl.vgtest
+	ldxp_stxp_fallbackimpl.vgtest sha512_v82.stdout.exp sha512_v82.stderr.exp \
+	sha512_v82.vgtest
 
 check_PROGRAMS = \
 	allexec \
 	bug484426 \
+	bug489338 \
         cvtf_imm \
+        dc_cvax \
 	fp_and_simd \
 	integer \
 	memory_test \
@@ -45,8 +51,12 @@ if BUILD_ARMV82_TESTS
   check_PROGRAMS += fp_and_simd_v82
 endif
 
+if HAVE_SHA3
+  check_PROGRAMS += sha512_v82
+endif
+
 if HAVE_CXX17
-  check_PROGRAMS += frinta_frintn
+  check_PROGRAMS += fcvta_s_u frinta_frintn
 endif
 
 if BUILD_ARMV82_DOTPROD_TESTS
@@ -68,10 +78,21 @@ simd_v81_CFLAGS    = $(AM_CFLAGS) -march=armv8.1-a+crypto
 simd_dotprod_CFLAGS    = $(AM_CFLAGS) -march=armv8.2-a+dotprod
 fp_and_simd_CFLAGS = $(AM_CFLAGS) -march=armv8-a+crypto
 fp_and_simd_v82_CFLAGS = $(AM_CFLAGS) -march=armv8.2-a+fp16+crypto
+# SHA-512 is not part of SHA-3, either as an algorithm or in Arm features, but
+# GCC lumps SHA-512 and SHA-3 extensions together as "sha3".
+sha512_v82_CFLAGS = $(AM_CFLAGS) -march=armv8.2-a+sha3
+fcvta_s_u_SOURCES  = fcvta_s_u.cpp
+fcvta_s_u_CXXFLAGS = ${AM_CXXFLAGS} -std=c++17
 frinta_frintn_SOURCES  = frinta_frintn.cpp
 frinta_frintn_CXXFLAGS = ${AM_CXXFLAGS} -std=c++17
 integer_CFLAGS     = $(AM_CFLAGS) -g -O0 -DTEST_BFM=0
 
+fp_and_simd_SOURCES     = fp_and_simd.c simd.h simd.c
+fp_and_simd_v82_SOURCES = fp_and_simd_v82.c simd.h simd.c
+sha512_v82_SOURCES      = sha512_v82.c simd.h simd.c
+
+bug489338_LDADD    = -lm
 fp_and_simd_LDADD  = -lm
 simd_v81_LDADD     = -lm
 fp_and_simd_v82_LDADD  = -lm
+sha512_v82_LDADD  = -lm

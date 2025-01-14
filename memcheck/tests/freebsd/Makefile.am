@@ -3,7 +3,8 @@ include $(top_srcdir)/Makefile.tool-tests.am
 
 dist_noinst_SCRIPTS = filter_stderr filter_pts dump_stdout filter_sigwait \
 	filter_scalar filter_realpathat filter_fstat filter_eventfd2 \
-	toucher1 toucher2 filter_getfsstat filter_context
+	toucher1 toucher2 filter_getfsstat filter_context filter_frame \
+	filter_supp
 
 EXTRA_DIST = \
 	access.vgtest \
@@ -50,6 +51,8 @@ EXTRA_DIST = \
 	eventfd2.stderr.exp \
 	extattr.vgtest \
 	extattr.stderr.exp \
+	fbsd278566.vgtest \
+	fbsd278566.stderr.exp \
 	fexecve.vgtest \
 	fexecve.stderr.exp \
 	file_locking_wait6.vgtest \
@@ -87,7 +90,10 @@ EXTRA_DIST = \
 	revoke.stderr.exp \
 	scalar.h scalar.vgtest \
 	scalar.stderr.exp \
+		scalar.stderr.exp-arm64 \
+		scalar.stderr.exp-arm64_2 \
 		scalar.stderr.exp-x86 \
+		scalar.stderr.exp-amd64-141 \
 	scalar_abort2.vgtest \
 	scalar_13_plus.vgtest \
 	scalar_13_plus.stderr.exp \
@@ -144,7 +150,7 @@ check_PROGRAMS = \
 	capsicum chflags \
 	chmod_chown clock_nanosleep_interrupt \
 	delete_sized_mismatch errno_aligned_allocs \
-	extattr \
+	extattr fbsd278566 \
 	fexecve \
 	file_locking_wait6 \
 	get_set_context get_set_login getfh \
@@ -195,6 +201,8 @@ timerfd_LDFLAGS = -lm
 endif
 
 aligned_alloc_CFLAGS = ${AM_CFLAGS} @FLAG_W_NO_NON_POWER_OF_TWO_ALIGNMENT@
+
+close_range_CFLAGS = ${AM_CFLAGS} @FLAG_W_NO_UNUSED_BUT_SET_VARIABLE@
 
 delete_sized_mismatch_CXXFLAGS = ${AM_CXXFLAGS} --std=c++14
 delete_sized_mismatch_SOURCES = delete_sized_mismatch.cpp

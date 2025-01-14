@@ -97,7 +97,7 @@ do
             fi
           fi
         done
-        
+
         # check that filter files derived from filter*.in are in noinst_SCRIPTS
         for f in $(ls -d filter*\.in 2>/dev/null )
         do

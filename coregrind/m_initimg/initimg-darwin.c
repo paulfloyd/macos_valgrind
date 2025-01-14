@@ -144,7 +144,7 @@ static HChar** setup_client_env ( HChar** origenv, const HChar* toolname)
       paths.  We might not need the space for vgpreload_<tool>.so, but it
       doesn't hurt to over-allocate briefly.  The 16s are just cautious
       slop. */
-   Int preload_core_path_len = vglib_len + sizeof(preload_core) 
+   Int preload_core_path_len = vglib_len + VG_(strlen)(preload_core)
                                          + sizeof(VG_PLATFORM) + 16;
    Int preload_tool_path_len = vglib_len + VG_(strlen)(toolname) 
                                          + sizeof(VG_PLATFORM) + 16;
@@ -342,10 +342,6 @@ Addr setup_client_stack( void*  init_sp,
    Addr client_SP;	        /* client stack base (initial SP) */
    Addr clstack_start;
    Int i;
-#if (XCODE_VERS >= XCODE_10_14_6)
-   const HChar *executable_path = "executable_path=";
-   const SizeT executable_path_length = VG_(strlen)(executable_path);
-#endif
 
    vg_assert(VG_IS_PAGE_ALIGNED(clstack_end+1));
    vg_assert( VG_(args_for_client) );
@@ -389,8 +385,8 @@ Addr setup_client_stack( void*  init_sp,
    auxsize += 2 * sizeof(Word);
    if (info->executable_path) {
        stringsize += 1 + VG_(strlen)(info->executable_path);
-#if (XCODE_VERS >= XCODE_10_14_6)
-       stringsize += executable_path_length;
+#if XCODE_VERS >= XCODE_10_14_6
+       stringsize += 16; // executable_path=
 #endif
    }
 
@@ -475,7 +471,7 @@ Addr setup_client_stack( void*  init_sp,
    /* --- executable_path + NULL --- */
    if (info->executable_path) {
 #if XCODE_VERS >= XCODE_10_14_6
-       Int executable_path_len = VG_(strlen)(info->executable_path) + executable_path_length + 1;
+       Int executable_path_len = VG_(strlen)(info->executable_path) + 16 + 1;
        HChar *executable_path = VG_(malloc)("initimg-darwin.scs.1", executable_path_len);
        VG_(snprintf)(executable_path, executable_path_len, "executable_path=%s", info->executable_path);
        *ptr++ = (Addr)copy_str(&strtab, executable_path);
@@ -483,9 +479,8 @@ Addr setup_client_stack( void*  init_sp,
 #else
        *ptr++ = (Addr)copy_str(&strtab, info->executable_path);
 #endif
-   } else {
+   } else
        *ptr++ = 0;
-   }
    *ptr++ = 0;
 
    vg_assert((strtab-stringbase) == stringsize);
