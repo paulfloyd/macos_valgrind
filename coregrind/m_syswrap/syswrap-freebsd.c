@@ -6652,12 +6652,12 @@ PRE(sys_close_range)
       SysRes res = VG_(mk_SysRes_Success)(0);
       if (lowfd <= 1U) {
          res = VG_(do_syscall3)(__NR_close_range, lowfd, 1U, ARG3);
-      }
+         }
       if (!sr_isError(res) && highfd >= 3U) {
          res = VG_(do_syscall3)(__NR_close_range, 3U, highfd, ARG3);
       }
-      /* If it failed along the way, it's presumably the flags being wrong. */
-      SET_STATUS_from_SysRes (res);
+   /* If it failed along the way, it's presumably the flags being wrong. */
+   SET_STATUS_from_SysRes (res);
    } else {
       SET_STATUS_from_SysRes(VG_(do_syscall3)(__NR_close_range, lowfd, highfd, ARG3));
    }
@@ -6678,7 +6678,7 @@ POST(sys_close_range)
    /* If the close_range range is too wide, we don't want to loop
       through the whole range.  */
    if (ARG2 >= VG_(fd_hard_limit)) {
-      ML_(record_fd_close_range)(tid, ARG1);
+     ML_(record_fd_close_range)(tid, ARG1);
    } else {
       for (fd = ARG1; fd <= highfd; fd++)
          if ((fd != 2/*stderr*/ || VG_(debugLog_getLevel)() == 0))
@@ -6986,7 +6986,7 @@ POST(sys_getrlimitusage)
       break;
    case VKI_RLIMIT_STACK:
       /*
-       * The main client stack is quite different when running under Valgrind. 
+       * The main client stack is quite different when running under Valgrind.
        * See aspacemg-linux.c for details, but in short on 64bit systems
        * the main stack starts with 128k reserved and a 512M limit.
        * Valgrind just has one value, 16M by default (can be changed with
