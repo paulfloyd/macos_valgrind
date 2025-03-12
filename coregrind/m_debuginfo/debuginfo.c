@@ -64,6 +64,7 @@
 #elif defined(VGO_darwin)
 # include "priv_readmacho.h"
 # include "priv_readpdb.h"
+# include "pub_core_mach.h"
 #endif
 #if defined(VGO_freebsd)
 #include "pub_core_clientstate.h"
@@ -325,6 +326,10 @@ DebugInfo* alloc_DebugInfo( const HChar* filename )
       di->ddump_line   = VG_(clo_debug_dump_line);
       di->ddump_frames = VG_(clo_debug_dump_frames);
    }
+
+#if DARWIN_VERS >= DARWIN_11_00
+   di->from_memory = False;
+#endif
 
    return di;
 }
@@ -1214,9 +1219,10 @@ ULong VG_(di_notify_mmap)( Addr a, Bool allow_SkFileV, Int use_fd )
    if (sr_isError(statres)) {
       DebugInfo fake_di;
       Bool quiet = VG_(strstr)(filename, "/var/run/nscd/") != NULL
-                   || VG_(strstr)(filename, "/dev/shm/") != NULL
-                   || VG_(strncmp)("/memfd:", filename,
-                                   VG_(strlen)("/memfd:")) == 0;
+#if defined(VGO_darwin)
+                   || VG_(strstr)(filename, DARWIN_FAKE_MEMORY_PATH) != NULL
+#endif
+                   || VG_(strstr)(filename, "/dev/shm/") != NULL;
       if (!quiet && VG_(clo_verbosity) > 1) {
          VG_(memset)(&fake_di, 0, sizeof(fake_di));
          fake_di.fsm.filename = ML_(dinfo_strdup)("di.debuginfo.nmm", filename);
@@ -1347,16 +1353,12 @@ ULong VG_(di_notify_mmap)( Addr a, Bool allow_SkFileV, Int use_fd )
       SysRes fd = VG_(open)( filename, oflags, 0 );
       if (sr_isError(fd)) {
          if (sr_Err(fd) != VKI_EACCES) {
-#if defined(VGO_darwin)
-            const HChar* message = "can't open file to inspect mach-o header";
-#else
-            const HChar* message = "can't open file to inspect ELF header";
-#endif
             DebugInfo fake_di;
             VG_(memset)(&fake_di, 0, sizeof(fake_di));
             fake_di.fsm.filename = ML_(dinfo_strdup)("di.debuginfo.nmm",
                                                      filename);
-            ML_(symerr)(&fake_di, True, message);
+            ML_(symerr)(&fake_di, True,
+                        "can't open file to inspect ELF header");
          }
          return 0;
       }
@@ -1367,21 +1369,25 @@ ULong VG_(di_notify_mmap)( Addr a, Bool allow_SkFileV, Int use_fd )
 
    expected_rw_load_count = 0;
 
-   Bool check_ok = False;
 #if defined(VGO_darwin)
-   check_ok = ML_(check_macho_and_get_rw_loads)( actual_fd, &expected_rw_load_count );
-#else
-   /* We're only interested in mappings of object files. */
-   check_ok = ML_(check_elf_and_get_rw_loads) ( actual_fd, filename, &expected_rw_load_count, use_fd == -1 );
+   if (!ML_(check_macho_and_get_rw_loads)( actual_fd, &expected_rw_load_count ))
+      return 0;
 #endif
+
+   /* We're only interested in mappings of object files. */
+#  if defined(VGO_linux) || defined(VGO_solaris) || defined(VGO_freebsd)
+
+   Bool elf_ok = ML_(check_elf_and_get_rw_loads) ( actual_fd, filename, &expected_rw_load_count, use_fd == -1 );
 
    if (use_fd == -1) {
       VG_(close)( actual_fd );
    }
 
-   if (!check_ok) {
+   if (!elf_ok) {
       return 0;
    }
+
+#  endif
 
    /* See if we have a DebugInfo for this filename.  If not,
       create one. */
@@ -1888,7 +1894,7 @@ ULong VG_(di_notify_dsc)( const HChar* filename, Addr header, SizeT len )
    const Bool       debug = VG_(debugLog_getLevel)() >= 3;
 
    if (debug)
-      VG_(dmsg)("di_notify_dsc-1: %s\n", filename);
+      VG_(dmsg)("di_notify_dsc-1: %s at %#lx-%#lx\n", filename, header, header+len);
 
    if (!ML_(check_macho_and_get_rw_loads_from_memory)( (const void*) header, len, &rw_load_count ))
       return 0;
@@ -1897,6 +1903,8 @@ ULong VG_(di_notify_dsc)( const HChar* filename, Addr header, SizeT len )
       create one. */
    di = find_or_create_DebugInfo_for( filename );
    vg_assert(di);
+
+   di->from_memory = True;
 
    if (di->have_dinfo) {
       if (debug)
@@ -2760,6 +2768,8 @@ Bool VG_(lookup_symbol_SLOW)(DiEpoch ep,
       for (i = 0; i < si->symtab_used; i++) {
          const HChar* pri_name = si->symtab[i].pri_name;
          vg_assert(pri_name);
+         if (debug)
+           VG_(printf)("lookup_symbol_SLOW: considering symbol %#lx %s\n", si->symtab[i].avmas.main, pri_name);
          if (0==VG_(strcmp)(name, pri_name)
              && (require_pToc ? GET_TOCPTR_AVMA(si->symtab[i].avmas) : True)) {
             *avmas = si->symtab[i].avmas;
@@ -2769,6 +2779,8 @@ Bool VG_(lookup_symbol_SLOW)(DiEpoch ep,
          if (sec_names) {
             vg_assert(sec_names[0]);
             while (*sec_names) {
+               if (debug)
+                 VG_(printf)("lookup_symbol_SLOW: considering symbol %#lx %s\n", si->symtab[i].avmas.main, *sec_names);
                if (0==VG_(strcmp)(name, *sec_names)
                    && (require_pToc
                        ? GET_TOCPTR_AVMA(si->symtab[i].avmas) : True)) {
@@ -3139,7 +3151,7 @@ UWord evalCfiExpr ( const XArray* exprs, Int ix,
             case Creg_IA_SP: return eec->uregs->sp;
             case Creg_IA_BP: return eec->uregs->fp;
             case Creg_MIPS_RA: return eec->uregs->ra;
-#           elif defined(VGP_arm64_linux) || defined(VGP_arm64_freebsd)
+#           elif defined(VGP_arm64_linux) || defined(VGP_arm64_freebsd) || defined(VGP_arm64_darwin)
             case Creg_ARM64_SP: return eec->uregs->sp;
             case Creg_ARM64_X30: return eec->uregs->x30;
             case Creg_ARM64_X29: return eec->uregs->x29;
@@ -3411,7 +3423,7 @@ static Addr compute_cfa ( const D3UnwindRegs* uregs,
          cfa = cfsi_m->cfa_off + uregs->fp;
          break;
 #     elif defined(VGA_ppc32) || defined(VGA_ppc64be) || defined(VGA_ppc64le)
-#     elif defined(VGP_arm64_linux)
+#     elif defined(VGP_arm64_linux) || defined(VGP_arm64_darwin)
       case CFIC_ARM64_SPREL:
          cfa = cfsi_m->cfa_off + uregs->sp;
          break;
@@ -3586,7 +3598,7 @@ Bool VG_(use_CF_info) ( /*MOD*/D3UnwindRegs* uregsHere,
 #  elif defined(VGA_mips32) || defined(VGA_mips64) || defined(VGA_nanomips)
    ipHere = uregsHere->pc;
 #  elif defined(VGA_ppc32) || defined(VGA_ppc64be) || defined(VGA_ppc64le)
-#  elif defined(VGP_arm64_linux)
+#  elif defined(VGA_arm64)
    ipHere = uregsHere->pc;
 #  elif defined(VGP_arm64_freebsd)
    ipHere = uregsHere->pc;
@@ -3732,7 +3744,7 @@ Bool VG_(use_CF_info) ( /*MOD*/D3UnwindRegs* uregsHere,
    COMPUTE(uregsPrev.sp, uregsHere->sp, cfsi_m->sp_how, cfsi_m->sp_off);
    COMPUTE(uregsPrev.fp, uregsHere->fp, cfsi_m->fp_how, cfsi_m->fp_off);
 #  elif defined(VGA_ppc32) || defined(VGA_ppc64be) || defined(VGA_ppc64le)
-#  elif defined(VGP_arm64_linux) || defined(VGP_arm64_freebsd)
+#  elif defined(VGP_arm64_linux) || defined(VGP_arm64_freebsd) || defined(VGP_arm64_darwin)
    COMPUTE(uregsPrev.pc,  uregsHere->pc,  cfsi_m->ra_how,  cfsi_m->ra_off);
    COMPUTE(uregsPrev.sp,  uregsHere->sp,  cfsi_m->sp_how,  cfsi_m->sp_off);
    COMPUTE(uregsPrev.x30, uregsHere->x30, cfsi_m->x30_how, cfsi_m->x30_off);

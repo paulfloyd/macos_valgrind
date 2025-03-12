@@ -39,23 +39,18 @@ void start_thread_NORETURN ( Word arg );
 void assign_port_name(mach_port_t port, const char *name);
 void record_named_port(ThreadId tid, mach_port_t port, mach_port_right_t right, const char *name);
 
-extern const SyscallTableEntry ML_(mach_trap_table)[];
-extern const SyscallTableEntry ML_(syscall_table)[];
-extern const SyscallTableEntry ML_(mdep_trap_table)[];
-
-extern const UInt ML_(syscall_table_size);
-extern const UInt ML_(mach_trap_table_size);
-extern const UInt ML_(mdep_trap_table_size);
-
 void VG_(show_open_ports)(void);
 
 Bool ML_(sync_mappings)(const HChar *when, const HChar *where, UWord num);
 
-// Unix syscalls.  
+// Unix syscalls.
 // GEN = it uses the generic wrapper
 // NYI = wrapper not yet implemented in Valgrind
 // NOC = the non-"_nocancel" wrapper is used
 // old = the syscall no longer exists in Darwin
+#if defined(VGA_arm64)
+DECL_TEMPLATE(darwin, syscall);                 // 0
+#endif
 DECL_TEMPLATE(darwin, exit);                    // 1
 // GEN fork 2
 // GEN read 3
@@ -93,7 +88,11 @@ DECL_TEMPLATE(darwin, chflags);                 // 34
 DECL_TEMPLATE(darwin, fchflags);                // 35
 // GEN sync 36
 // GEN kill 37
+#if defined(VGA_arm64)
+DECL_TEMPLATE(darwin, sys_crossarch_trap);      // 38
+#else
 // old stat 38
+#endif
 // GEN getppid 39
 // old lstat 40
 // GEN dup 41
@@ -240,9 +239,13 @@ DECL_TEMPLATE(darwin, csops_audittoken);        // 170
 // NYI kdebug_typefilter                        // 177
 #endif /* DARWIN_VERS >= DARWIN_10_12 */
 #if DARWIN_VERS >= DARWIN_10_11
-// NYI kdebug_trace_string                      // 178
+DECL_TEMPLATE(darwin, kdebug_trace_string); // 178
 #endif /* DARWIN_VERS >= DARWIN_10_11 */
+#if DARWIN_VERS >= DARWIN_15_00
+DECL_TEMPLATE(darwin, kdebug_trace64);     // 179
+#else
 // 179
+#endif
 DECL_TEMPLATE(darwin, kdebug_trace);            // 180
 // GEN setgid 181
 DECL_TEMPLATE(darwin, setegid);                 // 182
@@ -370,7 +373,9 @@ DECL_TEMPLATE(darwin, gettid);                  // 286
 // NYI mkfifo_extended 291
 // NYI mkdir_extended 292
 // NYI identitysvc 293
-// NYI shared_region_check_np 294
+#if DARWIN_VERS >= DARWIN_11_00
+DECL_TEMPLATE(darwin, shared_region_check_np); // 294
+#endif
 // NYI shared_region_map_np 295
 #if DARWIN_VERS >= DARWIN_10_6
 // NYI vm_pressure_monitor 296
@@ -548,7 +553,9 @@ DECL_TEMPLATE(darwin, fileport_makeport);        // 430
 // NYI pid_shutdown_sockets 436
 #endif /* DARWIN_VERS >= DARWIN_10_10 */
 // old old shared_region_slide_np 437
-// NYI shared_region_map_and_slide_np            // 438
+#if DARWIN_VERS >= DARWIN_11_00
+DECL_TEMPLATE(darwin, shared_region_map_and_slide_np); // 438
+#endif
 // NYI kas_info                                  // 439
 // NYI memorystatus_control                      // 440
 DECL_TEMPLATE(darwin, guarded_open_np);          // 441
@@ -589,12 +596,10 @@ DECL_TEMPLATE(darwin, faccessat);                // 466
 // NYI fstatat         // 469
 DECL_TEMPLATE(darwin, fstatat64);                // 470
 // NYI linkat          // 471
-// NYI unlinkat        // 472
+DECL_TEMPLATE(darwin, unlinkat);                 // 472
 DECL_TEMPLATE(darwin, readlinkat);               // 473
 // NYI symlinkat       // 474
-#if DARWIN_VERS >= DARWIN_10_15
-DECL_TEMPLATE(darwin, mkdirat);                  // 475
-#endif /* DARWIN_VERS >= DARWIN_10_15 */
+DECL_TEMPLATE(darwin,  mkdirat);                 // 475
 // NYI getattrlistat   // 476
 // NYI proc_trace_log  // 477
 DECL_TEMPLATE(darwin, bsdthread_ctl);            // 478
@@ -656,6 +661,46 @@ DECL_TEMPLATE(darwin, abort_with_payload);          // 521
 // NYI ntp_gettime                                  // 528
 // NYI os_fault_with_payload                        // 529
 #endif /* DARWIN_VERS >= DARWIN_10_13 */
+#if DARWIN_VERS >= DARWIN_10_14
+// NYI kqueue_workloop_ctl                          // 530
+// NYI __mach_bridge_remote_time                    // 531
+#endif /* DARWIN_VERS >= DARWIN_10_14 */
+#if DARWIN_VERS >= DARWIN_10_15
+// NYI coalition_ledger               // 532
+// NYI log_data                       // 533
+// NYI memorystatus_available_memory  // 534
+#endif
+#if DARWIN_VERS >= DARWIN_11_00
+DECL_TEMPLATE(darwin, objc_bp_assist_cfg_np); // 535
+// NYI shared_region_map_and_slide_2_np   // 536
+// NYI pivot_root                         // 537
+// NYI task_inspect_for_pid               // 538
+DECL_TEMPLATE(darwin, task_read_for_pid); // 539
+// NYI sys_preadv                         // 540
+// NYI sys_pwritev                        // 541
+// NYI sys_preadv_nocancel                // 542
+// NYI sys_pwritev_nocancel               // 543
+DECL_TEMPLATE(darwin, ulock_wait2);       // 544
+// NYI proc_info_extended_id              // 545
+#endif
+#if DARWIN_VERS >= DARWIN_12_00
+// NYI tracker_action         // 546
+// NYI debug_syscall_reject   // 547
+#endif
+#if DARWIN_VERS >= DARWIN_13_00
+// NYI sys_debug_syscall_reject_config  // 548
+// NYI graftdmg                         // 549
+DECL_TEMPLATE(darwin, map_with_linking_np); // 550
+// NYI freadlink                        // 551
+// NYI sys_record_system_event          // 552
+// NYI mkfifoat                         // 553
+// NYI mknodat                          // 554
+// NYI ungraftdmg                       // 555
+#endif
+#if DARWIN_VERS >= DARWIN_15_00
+// NYI sys_coalition_policy_set     // 556
+// NYI sys_coalition_policy_get     // 557
+#endif
 
 // Mach message helpers
 DECL_TEMPLATE(darwin, mach_port_set_context);
@@ -769,6 +814,7 @@ DECL_TEMPLATE(darwin, semaphore_wait);
 DECL_TEMPLATE(darwin, semaphore_wait_signal);
 DECL_TEMPLATE(darwin, semaphore_timedwait);
 DECL_TEMPLATE(darwin, semaphore_timedwait_signal);
+DECL_TEMPLATE(darwin, task_name_for_pid);
 DECL_TEMPLATE(darwin, task_for_pid);
 DECL_TEMPLATE(darwin, pid_for_task);
 
@@ -793,29 +839,53 @@ DECL_TEMPLATE(darwin, iokit_user_client_trap);
 DECL_TEMPLATE(darwin, swtch);
 DECL_TEMPLATE(darwin, swtch_pri);
 
+#if DARWIN_VERS >= DARWIN_10_14
+DECL_TEMPLATE(darwin, kernelrpc_mach_port_get_attributes_trap);
+#endif /* DARWIN_VERS >= DARWIN_10_14 */
+
+#if DARWIN_VERS >= DARWIN_10_15
+DECL_TEMPLATE(darwin, task_restartable_ranges_register);
+DECL_TEMPLATE(darwin, kernelrpc_mach_port_type_trap);
+DECL_TEMPLATE(darwin, kernelrpc_mach_port_request_notification_trap);
+#endif /* DARWIN_VERS >= DARWIN_10_15 */
+
+#if DARWIN_VERS >= DARWIN_13_00
+DECL_TEMPLATE(darwin, mach_msg2);
+#endif
+
+#if DARWIN_VERS >= DARWIN_14_00
+DECL_TEMPLATE(darwin, kernelrpc_mach_vm_purgable_control_trap);
+#endif
+
 // Machine-dependent traps
+#if defined(VGA_arm64)
+DECL_TEMPLATE(darwin, thread_set_tsd_base);
+#elif defined(VGA_x86) || defined(VGA_amd64)
 DECL_TEMPLATE(darwin, thread_fast_set_cthread_self);
+#else
+#error unknown architecture
+#endif
 
 // syswrap-<arch>-darwin.c
 #include <mach/mach.h>
-extern 
-void thread_state_from_vex(thread_state_t mach_generic, 
-                           thread_state_flavor_t flavor, 
-                           mach_msg_type_number_t count, 
+extern
+void thread_state_from_vex(thread_state_t mach_generic,
+                           thread_state_flavor_t flavor,
+                           mach_msg_type_number_t count,
                            VexGuestArchState *vex_generic);
 extern
-void thread_state_to_vex(const thread_state_t mach_generic, 
-                         thread_state_flavor_t flavor, 
-                         mach_msg_type_number_t count, 
+void thread_state_to_vex(const thread_state_t mach_generic,
+                         thread_state_flavor_t flavor,
+                         mach_msg_type_number_t count,
                          VexGuestArchState *vex_generic);
-extern 
-ThreadState *build_thread(const thread_state_t state, 
-                          thread_state_flavor_t flavor, 
+extern
+ThreadState *build_thread(const thread_state_t state,
+                          thread_state_flavor_t flavor,
                           mach_msg_type_number_t count);
 extern
-void hijack_thread_state(thread_state_t mach_generic, 
-                         thread_state_flavor_t flavor, 
-                         mach_msg_type_number_t count, 
+void hijack_thread_state(thread_state_t mach_generic,
+                         thread_state_flavor_t flavor,
+                         mach_msg_type_number_t count,
                          ThreadState *tst);
 extern
 __attribute__((noreturn))
@@ -825,10 +895,10 @@ void call_on_new_stack_0_1 ( Addr stack,
                              Word arg1 );
 
 extern void pthread_hijack_asm(void);
-extern void pthread_hijack(Addr self, Addr kport, Addr func, Addr func_arg, 
+extern void pthread_hijack(Addr self, Addr kport, Addr func, Addr func_arg,
                            Addr stacksize, Addr flags, Addr sp);
 extern void wqthread_hijack_asm(void);
-extern void wqthread_hijack(Addr self, Addr kport, Addr stackaddr, Addr workitem, Int reuse, Addr sp);
+extern void wqthread_hijack(Addr self, Addr kport, Addr stackaddr, Addr workitem, UInt reuse, Int kevent_count, Addr sp);
 
 extern Addr pthread_starter;
 extern Addr wqthread_starter;
