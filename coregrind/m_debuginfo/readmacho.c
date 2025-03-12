@@ -849,6 +849,12 @@ Bool ML_(read_macho_debug_info)( struct _DebugInfo* di )
      from_memory = True;
      kernel_slide = VG_(dyld_cache_get_slide)();
    }
+   if (di->fsm.rw_map_count) {
+      have_rw = True;
+   }
+#else
+   vg_assert(di->fsm.rw_map_count);
+   have_rw = True;
 #endif
    if (di->fsm.rw_map_count) {
       have_rw = True;
