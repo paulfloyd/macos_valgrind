@@ -53,6 +53,8 @@ EXTRA_DIST = \
 	extattr.stderr.exp \
 	fbsd278566.vgtest \
 	fbsd278566.stderr.exp \
+	fchroot.vgtest \
+	fchroot.stderr.exp \
 	fexecve.vgtest \
 	fexecve.stderr.exp \
 	file_locking_wait6.vgtest \
@@ -109,6 +111,8 @@ EXTRA_DIST = \
 	sctp2.vgtest \
 	sctp2.stderr.exp \
 	sctp2.stdout.exp \
+	setcred.vgtest \
+	setcred.stderr.exp \
 	setproctitle.vgtest \
 	setproctitle.stderr.exp \
 	setproctitle.stdout.exp \
@@ -176,6 +180,11 @@ if HAVE_AIO_READV
 check_PROGRAMS += aiov
 endif
 
+if HAVE_FCHROOT
+check_PROGRAMS += fchroot
+fchroot_SOURCES = fchroot.cpp
+endif
+
 if HAVE_GETRLIMITUSAGE
 check_PROGRAMS += getrlimitusage
 endif
@@ -203,23 +212,47 @@ if FREEBSD_KQUEUEX_SYSCALL
 check_PROGRAMS += kqueuex
 endif
 
+if HAVE_SETCRED
+check_PROGRAMS += setcred
+setcred_SOURCES = setcred.cpp
+setcred_CXXFLAGS = ${AM_CXXFLAGS} @FLAG_W_NO_UNINITIALIZED@
+endif
+
 if FREEBSD_TIMERFD_SYSCALL
 check_PROGRAMS += timerfd
 timerfd_LDFLAGS = -lm
 endif
 
-aligned_alloc_CFLAGS = ${AM_CFLAGS} @FLAG_W_NO_NON_POWER_OF_TWO_ALIGNMENT@
 
-delete_sized_mismatch_CXXFLAGS = ${AM_CXXFLAGS} --std=c++14
-delete_sized_mismatch_SOURCES = delete_sized_mismatch.cpp
-
-errno_aligned_allocs_CFLAGS = ${AM_CFLAGS} @FLAG_W_NO_NON_POWER_OF_TWO_ALIGNMENT@
-
-
-extattr_CFLAGS = ${AM_CFLAGS} @FLAG_W_NO_UNUSED_BUT_SET_VARIABLE@
-
-memalign_CFLAGS = ${AM_CFLAGS} @FLAG_W_NO_NON_POWER_OF_TWO_ALIGNMENT@
-
-openpty_LDFLAGS = ${AM_LDFLAGS} -lutil
-
-scalar_CFLAGS = ${AM_CFLAGS} -g
+access_CFLAGS 			= ${AM_CFLAGS} @FLAG_W_NO_UNINITIALIZED@ @FLAG_W_NO_USE_AFTER_FREE@
+aligned_alloc_CFLAGS 		= ${AM_CFLAGS} @FLAG_W_NO_NON_POWER_OF_TWO_ALIGNMENT@
+capsicum_CFLAGS 		= ${AM_CFLAGS} @FLAG_W_NO_UNINITIALIZED@ @FLAG_W_NO_USE_AFTER_FREE@
+chflags_CFLAGS 			= ${AM_CFLAGS} @FLAG_W_NO_UNINITIALIZED@ @FLAG_W_NO_USE_AFTER_FREE@
+chmod_chown_CFLAGS 		= ${AM_CFLAGS} @FLAG_W_NO_UNINITIALIZED@ @FLAG_W_NO_USE_AFTER_FREE@
+delete_sized_mismatch_CXXFLAGS	= ${AM_CXXFLAGS} --std=c++14
+delete_sized_mismatch_SOURCES	= delete_sized_mismatch.cpp
+errno_aligned_allocs_CFLAGS	= ${AM_CFLAGS} @FLAG_W_NO_NON_POWER_OF_TWO_ALIGNMENT@
+extattr_CFLAGS			= ${AM_CFLAGS} @FLAG_W_NO_UNUSED_BUT_SET_VARIABLE@ @FLAG_W_NO_UNINITIALIZED@ @FLAG_W_NO_USE_AFTER_FREE@
+get_set_login_CFLAGS		= ${AM_CFLAGS} @FLAG_W_NO_USE_AFTER_FREE@
+getfh_CFLAGS			= ${AM_CFLAGS} @FLAG_W_NO_USE_AFTER_FREE@
+getfsstat_CFLAGS		= ${AM_CFLAGS} @FLAG_W_NO_UNINITIALIZED@ @FLAG_W_NO_USE_AFTER_FREE@
+linkat_CFLAGS			= ${AM_CFLAGS} @FLAG_W_NO_MAYBE_UNINITIALIZED@ @FLAG_W_NO_UNINITIALIZED@ @FLAG_W_NO_USE_AFTER_FREE@
+memalign_CFLAGS			= ${AM_CFLAGS} @FLAG_W_NO_NON_POWER_OF_TWO_ALIGNMENT@
+misc_CFLAGS			= ${AM_CFLAGS} @FLAG_W_NO_USE_AFTER_FREE@
+openpty_LDFLAGS			= ${AM_LDFLAGS} -lutil
+pdfork_pdkill_CFLAGS		= ${AM_CFLAGS} @FLAG_W_NO_MAYBE_UNINITIALIZED@ @FLAG_W_NO_USE_AFTER_FREE@
+realpathat_CFLAGS		= ${AM_CFLAGS} @FLAG_W_NO_USE_AFTER_FREE@
+revoke_CFLAGS			= ${AM_CFLAGS} @FLAG_W_NO_USE_AFTER_FREE@
+scalar_CFLAGS			= ${AM_CFLAGS} -g @FLAG_W_NO_UNINITIALIZED@
+scalar_abort2_CFLAGS		= ${AM_CFLAGS} @FLAG_W_NO_UNINITIALIZED@
+scalar_fork_CFLAGS		= ${AM_CFLAGS} @FLAG_W_NO_UNUSED_VARIABLE@
+scalar_pdfork_CFLAGS		= ${AM_CFLAGS} @FLAG_W_NO_UNINITIALIZED@
+scalar_thr_exit_CFLAGS		= ${AM_CFLAGS} @FLAG_W_NO_UNINITIALIZED@
+scalar_vfork_CFLAGS		= ${AM_CFLAGS} @FLAG_W_NO_UNUSED_VARIABLE@
+sctp2_CFLAGS			= ${AM_CFLAGS} @FLAG_W_NO_UNINITIALIZED@
+sigwait_CFLAGS			= ${AM_CFLAGS} @FLAG_W_NO_USE_AFTER_FREE@
+stat_CFLAGS			= ${AM_CFLAGS} @FLAG_W_NO_MAYBE_UNINITIALIZED@ @FLAG_W_NO_UNINITIALIZED@ @FLAG_W_NO_USE_AFTER_FREE@
+statfs_CFLAGS			= ${AM_CFLAGS} @FLAG_W_NO_UNINITIALIZED@ @FLAG_W_NO_USE_AFTER_FREE@
+timing_safe_CFLAGS		= ${AM_CFLAGS} @FLAG_W_NO_USE_AFTER_FREE@
+utimens_CFLAGS			= ${AM_CFLAGS} @FLAG_W_NO_UNINITIALIZED@ @FLAG_W_NO_USE_AFTER_FREE@
+utimes_CFLAGS			= ${AM_CFLAGS} @FLAG_W_NO_UNINITIALIZED@ @FLAG_W_NO_USE_AFTER_FREE@

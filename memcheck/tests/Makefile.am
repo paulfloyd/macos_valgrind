@@ -86,6 +86,7 @@ dist_noinst_SCRIPTS = \
 	filter_varinfo3 \
 	filter_memcheck \
 	filter_malloc_free \
+	filter_sendmsg \
 	filter_size_t \
 	filter_stanza \
 	filter_stanza.awk \
@@ -256,7 +257,7 @@ EXTRA_DIST = \
 	leak-segv-jmp.vgtest leak-segv-jmp.stderr.exp \
 	lks.vgtest lks.stdout.exp lks.supp lks.stderr.exp \
 	long_namespace_xml.vgtest long_namespace_xml.stdout.exp \
-	long_namespace_xml.stderr.exp \
+	long_namespace_xml.stderr.exp long_namespace_xml.stderr.exp-freebsd \
 	long-supps.vgtest long-supps.stderr.exp long-supps.supp \
 	mallinfo.stderr.exp mallinfo.vgtest \
 	malloc_free_fill.vgtest \
@@ -353,6 +354,10 @@ EXTRA_DIST = \
 	realloc_size_zero.stderr.exp realloc_size_zero.stdout.exp-glibc \
 		realloc_size_zero.stdout.exp-other \
 		realloc_size_zero.vgtest \
+	realloc_size_zero_xml.stderr.exp \
+		realloc_size_zero_xml.stdout.exp \
+		realloc_size_zero_xml.stdout.exp-glibc \
+		realloc_size_zero_xml.vgtest \
 	realloc_size_zero_yes.stderr.exp realloc_size_zero_yes.stdout.exp \
 		realloc_size_zero_yes.vgtest \
 	realloc_size_zero_again_yes.stderr.exp \
@@ -381,7 +386,6 @@ EXTRA_DIST = \
 	sem.stderr.exp sem.vgtest \
 	sendmsg.stderr.exp sendmsg.stderr.exp-solaris sendmsg.vgtest \
 	    sendmsg.stderr.exp-freebsd \
-	    sendmsg.stderr.exp-freebsd-x86 \
 	sh-mem.stderr.exp sh-mem.vgtest \
 	sh-mem-random.stderr.exp sh-mem-random.stdout.exp64 \
 	sh-mem-random.stdout.exp sh-mem-random.vgtest \
@@ -446,9 +450,11 @@ EXTRA_DIST = \
 	vcpu_fbench.stdout.exp vcpu_fbench.stderr.exp vcpu_fbench.vgtest \
 	vcpu_fnfns.stdout.exp vcpu_fnfns.stdout.exp-glibc28-amd64 \
 	vcpu_fnfns.stdout.exp-darwin vcpu_fnfns.stdout.exp-solaris \
+	vcpu_fnfns.stdout.exp-illumos \
 	vcpu_fnfns.stderr.exp vcpu_fnfns.vgtest \
 	wcpncpy.stderr.exp wcpncpy.vgtest \
 	wcs.vgtest wcs.stderr.exp wcs.stdout.exp \
+	wcscat.vgtest wcscat.stderr.exp wcscat.stdout.exp \
 	wcsncpy.vgtest wcsncpy.stderr.exp \
 	wmemcmp.vgtest wmemcmp.stderr.exp \
 	wrap1.vgtest wrap1.stdout.exp wrap1.stderr.exp \
@@ -555,6 +561,7 @@ check_PROGRAMS = \
 	varinforestrict \
 	vcpu_fbench vcpu_fnfns \
 	wcs \
+	wcscat \
 	xml1 \
 	wmemcmp \
 	wrap1 wrap2 wrap3 wrap4 wrap5 wrap6 wrap7 wrap7so.so wrap8 \
@@ -669,8 +676,9 @@ leak_cpp_interior_SOURCES	= leak_cpp_interior.cpp
 # we are actually testing for at runtime.
 accounting_CFLAGS	= $(AM_CFLAGS) @FLAG_W_NO_ALLOC_SIZE_LARGER_THAN@
 badfree_CFLAGS		= $(AM_CFLAGS) @FLAG_W_NO_FREE_NONHEAP_OBJECT@
-bug155125_CFLAGS	= $(AM_CFLAGS) -Wno-unused-result @FLAG_W_NO_ALLOC_SIZE_LARGER_THAN@
+bug155125_CFLAGS	= $(AM_CFLAGS) @FLAG_W_NO_UNUSED_RESULT@ @FLAG_W_NO_ALLOC_SIZE_LARGER_THAN@
 bug472219_CFLAGS	= $(AM_CFLAGS) @FLAG_W_NO_UNINITIALIZED@
+malloc_usable_CFLAGS	= ${AM_CFLAGS} @FLAG_W_NO_MAYBE_UNINITIALIZED@ @FLAG_W_NO_UNINITIALIZED@
 mallinfo_CFLAGS		= $(AM_CFLAGS) -Wno-deprecated-declarations
 malloc3_CFLAGS		= $(AM_CFLAGS) @FLAG_W_NO_ALLOC_SIZE_LARGER_THAN@
 sbfragment_CFLAGS	= $(AM_CFLAGS) -Wno-deprecated-declarations

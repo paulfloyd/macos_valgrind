@@ -16,6 +16,9 @@ EXTRA_DIST = \
 	gsl-1.6.patch \
 	gsl-1.6.supp \
 	gsl-1.6.out.x86.exp \
+	ltp-tester.sh \
+	ltp-excludes.txt \
+	ltp-error-patterns.txt \
 	posixtestsuite-1.5.1-diff.txt \
 	ppcfround.c \
 	ppc64shifts.c \
@@ -30,7 +33,7 @@ bin_PROGRAMS = valgrind-listener valgrind-di-server
 
 valgrind_listener_SOURCES = valgrind-listener.c
 valgrind_listener_CPPFLAGS  = $(AM_CPPFLAGS_PRI) -I$(top_srcdir)/coregrind
-valgrind_listener_CFLAGS    = $(AM_CFLAGS_PRI)
+valgrind_listener_CFLAGS    = $(AM_CFLAGS_PRI) -fhosted
 valgrind_listener_CCASFLAGS = $(AM_CCASFLAGS_PRI)
 valgrind_listener_LDFLAGS   = $(AM_CFLAGS_PRI)
 if VGCONF_PLATVARIANT_IS_ANDROID
@@ -49,7 +52,7 @@ endif
 
 valgrind_di_server_SOURCES   = valgrind-di-server.c
 valgrind_di_server_CPPFLAGS  = $(AM_CPPFLAGS_PRI) -I$(top_srcdir)/coregrind
-valgrind_di_server_CFLAGS    = $(AM_CFLAGS_PRI)
+valgrind_di_server_CFLAGS    = $(AM_CFLAGS_PRI) -fhosted
 valgrind_di_server_CCASFLAGS = $(AM_CCASFLAGS_PRI)
 valgrind_di_server_LDFLAGS   = $(AM_CFLAGS_PRI)
 if VGCONF_PLATVARIANT_IS_ANDROID
@@ -84,7 +87,7 @@ endif
 
 getoff_@VGCONF_ARCH_PRI@_@VGCONF_OS@_SOURCES   = getoff.c
 getoff_@VGCONF_ARCH_PRI@_@VGCONF_OS@_CPPFLAGS  = $(AM_CPPFLAGS_@VGCONF_PLATFORM_PRI_CAPS@)
-getoff_@VGCONF_ARCH_PRI@_@VGCONF_OS@_CFLAGS    = $(AM_CFLAGS_@VGCONF_PLATFORM_PRI_CAPS@)
+getoff_@VGCONF_ARCH_PRI@_@VGCONF_OS@_CFLAGS    = $(AM_CFLAGS_@VGCONF_PLATFORM_PRI_CAPS@) -fhosted
 getoff_@VGCONF_ARCH_PRI@_@VGCONF_OS@_CCASFLAGS = $(AM_CCASFLAGS_PRI)
 getoff_@VGCONF_ARCH_PRI@_@VGCONF_OS@_LDFLAGS   = $(AM_CFLAGS_PRI) @LIB_UBSAN@
 if HAVE_DLINFO_RTLD_DI_TLS_MODID
@@ -101,7 +104,7 @@ endif
 if VGCONF_HAVE_PLATFORM_SEC
 getoff_@VGCONF_ARCH_SEC@_@VGCONF_OS@_SOURCES   = getoff.c
 getoff_@VGCONF_ARCH_SEC@_@VGCONF_OS@_CPPFLAGS  = $(AM_CPPFLAGS_@VGCONF_PLATFORM_SEC_CAPS@)
-getoff_@VGCONF_ARCH_SEC@_@VGCONF_OS@_CFLAGS    = $(AM_CFLAGS_@VGCONF_PLATFORM_SEC_CAPS@)
+getoff_@VGCONF_ARCH_SEC@_@VGCONF_OS@_CFLAGS    = $(AM_CFLAGS_@VGCONF_PLATFORM_SEC_CAPS@) -fhosted
 getoff_@VGCONF_ARCH_SEC@_@VGCONF_OS@_CCASFLAGS = $(AM_CCASFLAGS_SEC)
 getoff_@VGCONF_ARCH_SEC@_@VGCONF_OS@_LDFLAGS   = $(AM_CFLAGS_SEC)
 if HAVE_DLINFO_RTLD_DI_TLS_MODID
@@ -123,6 +126,9 @@ endif
 
 auxchecks: gsl-check
 auxclean: gsl-clean
+
+ltpchecks: ltp-check
+ltpclean: ltp-clean
 
 # You can override AUX_CHECK_DIR to use a previous download/build.
 # Must be an absolute path.
@@ -148,6 +154,14 @@ GSL_CFLAGS+=-mfpmath=sse -msse2
 endif
 endif
 
+# Linux Test Project
+LTP_VERSION=20250130
+LTP_SHA256_SUM=02e4ec326be54c3fd92968229a468c02c665d168a8a673edc38a891f7395ae10
+LTP_TAR_NAME=ltp-full-$(LTP_VERSION).tar.xz
+LTP_URL=https://github.com/linux-test-project/ltp/releases/download/$(LTP_VERSION)/$(LTP_TAR_NAME)
+LTP_TAR=$(AUX_CHECK_DIR)/$(LTP_TAR_NAME)
+LTP_SRC_DIR=$(AUX_CHECK_DIR)/ltp-full-$(LTP_VERSION)
+
 # Trick to get a literal space to use in substitutions
 sp := $(subst ,, )
 
@@ -166,6 +180,10 @@ $(GSL_TAR):
 	mkdir -p $(AUX_CHECK_DIR)
 	wget -q -O $(GSL_TAR) $(GSL_URL)
 
+$(LTP_TAR):
+	mkdir -p $(AUX_CHECK_DIR)
+	wget -q -O $(LTP_TAR) $(LTP_URL)
+
 # We need to autoreconf to make sure to get config.guess, config.sub
 # and libtool for newer architectures.
 $(GSL_SRC_DIR)/gsl-patched: $(GSL_TAR)
@@ -175,6 +193,15 @@ $(GSL_SRC_DIR)/gsl-patched: $(GSL_TAR)
 	 cd $(GSL_DIR_NAME) && \
 	 patch -p1 < $(abs_top_srcdir)/auxprogs/gsl-1.6.patch && \
 	 autoreconf -f -i -Wnone)
+	touch $@
+
+$(LTP_SRC_DIR): $(LTP_TAR)
+	echo "$(LTP_SHA256_SUM)  $(LTP_TAR)" | @SHA256SUM@ --check -
+	(cd $(AUX_CHECK_DIR) && \
+	 tar Jxf $(LTP_TAR_NAME) && \
+	 cd $(LTP_SRC_DIR) && \
+	 ./configure CC="${CC}" CXX="${CXX}" CFLAGS="$(LTP_CFLAGS)" && \
+	 ${MAKE} -j $(nproc) -C testcases/kernel/syscalls)
 	touch $@
 
 # We need make check -k because
@@ -204,9 +231,24 @@ gsl-check: $(GSL_BUILD_DIR)/gsl-build
 	diff -u $(abs_top_srcdir)/auxprogs/gsl-1.6.out.x86.exp \
 		$(GSL_BUILD_DIR)/valgrind-gsl.out
 
+# Extract -jNUM from MAKEFLAGS.
+# Note that any spaces between -j and NUM have already been removed.
+# Also there will be only one (the last) -jNUM left in MAKEFLAGS.
+PARALLEL_JOBS=$(subst -j,,$(filter -j%,$(MAKEFLAGS)))
+
+ltp-check: $(LTP_SRC_DIR)
+	PARALLEL_JOBS=$(PARALLEL_JOBS) \
+	LTP_SRC_DIR=$(LTP_SRC_DIR) \
+	VALGRIND=$(abs_top_builddir)/vg-in-place \
+	  $(abs_top_srcdir)/auxprogs/ltp-tester.sh
+
+
 # We keep the tarball but remove the unpacked sources and build
 gsl-clean:
 	rm -rf $(GSL_SRC_NAME) $(GSL_BUILD_DIR)
+
+ltp-clean:
+	rm -rf $(LTP_SRC_DIR)
 
 #----------------------------------------------------------------------------
 # General stuff
@@ -214,7 +256,7 @@ gsl-clean:
 
 all-local: inplace-noinst_PROGRAMS inplace-noinst_DSYMS
 
-clean-local: clean-noinst_DSYMS auxclean
+clean-local: clean-noinst_DSYMS auxclean ltpclean
 
 install-exec-local: install-noinst_PROGRAMS install-noinst_DSYMS
 

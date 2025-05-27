@@ -24,7 +24,6 @@
 
 #include "libvex_ir.h"        // emptyIRSB
 #include "libvex.h"           // LibVEX_Init
-#include "main_util.h"        // GRRR for guest_s390_defs.h which needs STATIC_ASSERT
 #include "guest_s390_defs.h"  // disInstr_S390
 #include "host_s390_defs.h"   // s390_host_hwcaps
 #include "main_globals.h"     // vex_traceflags
@@ -112,13 +111,16 @@ vex_init(void)
 
 /* Reset the VEX memory allocator. Otherwise, we'll run out of memory
    with a suggestion to recompile valgrind. Yuck. */
-void
+static void
 vex_reset(void)
 {
    if (vex_initdone) {
       vexSetAllocModeTEMP_and_clear();
       dis_irsb = emptyIRSB();
    }
+
+   /* Otherwise we won't make it through s390_irgen_EXRL. */
+   last_execute_target = 42;
 }
 
 
@@ -130,6 +132,9 @@ const char *
 vex_disasm(const unsigned char *codebuf, int *spec_exc)
 {
    DisResult res;
+
+   /* Work around VEX running out of memory. */
+   vex_reset();
 
    res = disInstr_S390(dis_irsb, codebuf, /* delta */0, /* guest_IA */0,
                        VexArchS390X, NULL, NULL, VexEndnessBE, 0);

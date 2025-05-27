@@ -814,6 +814,7 @@ static SyscallTableEntry syscall_main_table[] = {
    LINX_ (__NR_syncfs, sys_syncfs),
    LINXY (__NR_statx, sys_statx),
    GENX_ (__NR_rseq, sys_ni_syscall),
+   LINX_ (__NR_io_pgetevents, sys_io_pgetevents),
    LINX_ (__NR_setns, sys_setns),
    LINXY (__NR_io_uring_setup, sys_io_uring_setup),
    LINXY (__NR_io_uring_enter, sys_io_uring_enter),
@@ -834,7 +835,9 @@ static SyscallTableEntry syscall_main_table[] = {
    LINXY (__NR_landlock_create_ruleset, sys_landlock_create_ruleset),
    LINX_ (__NR_landlock_add_rule, sys_landlock_add_rule),
    LINX_ (__NR_landlock_restrict_self, sys_landlock_restrict_self),
+   LINXY (__NR_cachestat, sys_cachestat),
    LINX_ (__NR_fchmodat2, sys_fchmodat2),
+   LINXY (__NR_userfaultfd, sys_userfaultfd),
 };
 
 SyscallTableEntry * ML_(get_linux_syscall_entry) ( UInt sysno )

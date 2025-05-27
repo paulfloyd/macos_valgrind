@@ -1000,7 +1000,8 @@ PRE(sys_mount)
 {
    // Nb: depending on 'flags', the 'type' and 'data' args may be ignored.
    // We are conservative and check everything, except the memory pointed to
-   // by 'data'.
+   // by 'data'. And since both 'source' and 'type' may be ignored, we allow
+   // them to be NULL.
    *flags |= SfMayBlock;
    PRINT("sys_mount( %#" FMT_REGWORD "x(%s), %#" FMT_REGWORD "x(%s), %#"
          FMT_REGWORD "x(%s), %#" FMT_REGWORD "x, %#" FMT_REGWORD "x )",
@@ -1012,7 +1013,8 @@ PRE(sys_mount)
    if (ARG1)
       PRE_MEM_RASCIIZ( "mount(source)", ARG1);
    PRE_MEM_RASCIIZ( "mount(target)", ARG2);
-   PRE_MEM_RASCIIZ( "mount(type)", ARG3);
+   if (ARG3)
+      PRE_MEM_RASCIIZ( "mount(type)", ARG3);
 }
 
 PRE(sys_oldumount)
@@ -2103,6 +2105,7 @@ PRE(sys_epoll_create)
 POST(sys_epoll_create)
 {
    vg_assert(SUCCESS);
+   POST_newFd_RES;
    if (!ML_(fd_allowed)(RES, "epoll_create", tid, True)) {
       VG_(close)(RES);
       SET_STATUS_Failure( VKI_EMFILE );
@@ -2120,6 +2123,7 @@ PRE(sys_epoll_create1)
 POST(sys_epoll_create1)
 {
    vg_assert(SUCCESS);
+   POST_newFd_RES;
    if (!ML_(fd_allowed)(RES, "epoll_create1", tid, True)) {
       VG_(close)(RES);
       SET_STATUS_Failure( VKI_EMFILE );
@@ -2234,6 +2238,7 @@ PRE(sys_eventfd)
 }
 POST(sys_eventfd)
 {
+   POST_newFd_RES;
    if (!ML_(fd_allowed)(RES, "eventfd", tid, True)) {
       VG_(close)(RES);
       SET_STATUS_Failure( VKI_EMFILE );
@@ -2250,6 +2255,7 @@ PRE(sys_eventfd2)
 }
 POST(sys_eventfd2)
 {
+   POST_newFd_RES;
    if (!ML_(fd_allowed)(RES, "eventfd2", tid, True)) {
       VG_(close)(RES);
       SET_STATUS_Failure( VKI_EMFILE );
@@ -2289,10 +2295,20 @@ PRE(sys_prlimit64)
                  vki_pid_t, pid, unsigned int, resource,
                  const struct rlimit64 *, new_rlim,
                  struct rlimit64 *, old_rlim);
-   if (ARG3)
+   if (ARG3) {
       PRE_MEM_READ( "rlimit64(new_rlim)", ARG3, sizeof(struct vki_rlimit64) );
-   if (ARG4)
+      if (!ML_(safe_to_deref)((void*)(Addr)ARG3, sizeof(struct vki_rlimit64))) {
+         SET_STATUS_Failure(VKI_EFAULT);
+         return;
+      }
+   }
+   if (ARG4) {
       PRE_MEM_WRITE( "rlimit64(old_rlim)", ARG4, sizeof(struct vki_rlimit64) );
+      if (!ML_(safe_to_deref)((void*)(Addr)ARG4, sizeof(struct vki_rlimit64))) {
+         SET_STATUS_Failure(VKI_EFAULT);
+         return;
+      }
+   }
 
    if (ARG3 &&
        ((struct vki_rlimit64 *)(Addr)ARG3)->rlim_cur
@@ -2569,32 +2585,49 @@ PRE(sys_io_destroy)
    }  
 }  
 
+static
+void common_pre_io_getevents(ThreadId tid, UWord a1, UWord a2, UWord a3, UWord a4, UWord a5, UWord a6, UWord* flags, const HChar* funtion_name)
+{
+   HChar buf[25];
+   *flags |= SfMayBlock;
+   PRINT("sys_%s ( %llu, %lld, %lld, %#" FMT_REGWORD "x, %#"
+         FMT_REGWORD "x )", funtion_name,
+         (ULong)a1,(Long)a2,(Long)a3,a4,a5);
+   if (a3 > 0) {
+      VG_(snprintf)(buf, 25, "%s(events)", funtion_name);
+      PRE_MEM_WRITE( buf, a4, sizeof(struct vki_io_event)*a3 );
+   }
+   if (a5 != 0) {
+      VG_(snprintf)(buf, 25, "%s(timeout)", funtion_name);
+      PRE_MEM_READ( buf, a5, sizeof(struct vki_timespec));
+   }
+
+   if (a6 != 0) {
+      // only for io_pgetevents
+      PRE_MEM_READ("io_pgetevents(usig)",
+                   a6, sizeof(struct vki__aio_sigset));
+   }
+}
+
 PRE(sys_io_getevents)
 {
-   *flags |= SfMayBlock;
-   PRINT("sys_io_getevents ( %llu, %lld, %lld, %#" FMT_REGWORD "x, %#"
-         FMT_REGWORD "x )",
-         (ULong)ARG1,(Long)ARG2,(Long)ARG3,ARG4,ARG5);
    PRE_REG_READ5(long, "io_getevents",
                  vki_aio_context_t, ctx_id, long, min_nr, long, nr,
                  struct io_event *, events,
                  struct timespec *, timeout);
-   if (ARG3 > 0)
-      PRE_MEM_WRITE( "io_getevents(events)",
-                     ARG4, sizeof(struct vki_io_event)*ARG3 );
-   if (ARG5 != 0)
-      PRE_MEM_READ( "io_getevents(timeout)",
-                    ARG5, sizeof(struct vki_timespec));
+   common_pre_io_getevents(tid, ARG1, ARG2, ARG3, ARG4, ARG5, 0U, flags, "io_getevents");
 }
-POST(sys_io_getevents)
+
+static
+void common_post_sys_io_events(ThreadId tid, UWord a4, SyscallStatus* status, const HChar* funtion_name)
 {
    Int i;
    vg_assert(SUCCESS);
    if (RES > 0) {
-      POST_MEM_WRITE( ARG4, sizeof(struct vki_io_event)*RES );
+      POST_MEM_WRITE( a4, sizeof(struct vki_io_event)*RES );
       for (i = 0; i < RES; i++) {
          const struct vki_io_event *vev =
-            ((struct vki_io_event *)(Addr)ARG4) + i;
+            ((struct vki_io_event *)(Addr)a4) + i;
          const struct vki_iocb *cb = (struct vki_iocb *)(Addr)vev->obj;
 
          switch (cb->aio_lio_opcode) {
@@ -2613,32 +2646,38 @@ POST(sys_io_getevents)
             break;
 
          case VKI_IOCB_CMD_PREADV:
-	     if (vev->result > 0) {
-                  struct vki_iovec * vec = (struct vki_iovec *)(Addr)cb->aio_buf;
-                  Int remains = vev->result;
-                  Int j;
+            if (vev->result > 0) {
+               struct vki_iovec * vec = (struct vki_iovec *)(Addr)cb->aio_buf;
+               Int remains = vev->result;
+                Int j;
 
-                  for (j = 0; j < cb->aio_nbytes; j++) {
-                       Int nReadThisBuf = vec[j].iov_len;
-                       if (nReadThisBuf > remains) nReadThisBuf = remains;
-                       POST_MEM_WRITE( (Addr)vec[j].iov_base, nReadThisBuf );
-                       remains -= nReadThisBuf;
-                       if (remains < 0) VG_(core_panic)("io_getevents(PREADV): remains < 0");
-                  }
-	     }
-             break;
+               for (j = 0; j < cb->aio_nbytes; j++) {
+                   Int nReadThisBuf = vec[j].iov_len;
+                  if (nReadThisBuf > remains) nReadThisBuf = remains;
+                  POST_MEM_WRITE( (Addr)vec[j].iov_base, nReadThisBuf );
+                  remains -= nReadThisBuf;
+                  if (remains < 0) VG_(core_panic)("io_getevents(PREADV): remains < 0");
+               }
+            }
+            break;
 
          case VKI_IOCB_CMD_PWRITEV:
              break;
 
          default:
             VG_(message)(Vg_DebugMsg,
-                        "Warning: unhandled io_getevents opcode: %u\n",
+                        "Warning: unhandled %s opcode: %u\n",
+                        funtion_name,
                         cb->aio_lio_opcode);
             break;
          }
       }
    }
+}
+
+POST(sys_io_getevents)
+{
+   common_post_sys_io_events(tid, ARG4, status, "io_getevents");
 }
 
 PRE(sys_io_submit)
@@ -2776,6 +2815,7 @@ PRE(sys_fanotify_init)
 
 POST(sys_fanotify_init)
 {
+   POST_newFd_RES;
    vg_assert(SUCCESS);
    if (!ML_(fd_allowed)(RES, "fanotify_init", tid, True)) {
       VG_(close)(RES);
@@ -2824,6 +2864,7 @@ PRE(sys_inotify_init)
 POST(sys_inotify_init)
 {
    vg_assert(SUCCESS);
+   POST_newFd_RES;
    if (!ML_(fd_allowed)(RES, "inotify_init", tid, True)) {
       VG_(close)(RES);
       SET_STATUS_Failure( VKI_EMFILE );
@@ -5922,6 +5963,7 @@ PRE(sys_openat)
 POST(sys_openat)
 {
    vg_assert(SUCCESS);
+   POST_newFd_RES;
    if (!ML_(fd_allowed)(RES, "openat", tid, True)) {
       VG_(close)(RES);
       SET_STATUS_Failure( VKI_EMFILE );
@@ -6162,6 +6204,26 @@ PRE(sys_fchmodat)
    PRE_REG_READ3(long, "fchmodat",
                  int, dfd, const char *, path, vki_mode_t, mode);
    PRE_MEM_RASCIIZ( "fchmodat(path)", ARG2 );
+}
+
+PRE(sys_cachestat)
+{
+    PRINT("sys_cachestat ( %lu, %#lx, %#lx, %lu )", ARG1, ARG2, ARG3, ARG4);
+    PRE_REG_READ4(long, "cachestat",
+                  unsigned long, fd, struct vki_cachestat_range  *, cstat_range,
+                  struct vki_cachestat*, cstat, unsigned long, flags);
+    if (!ML_(fd_allowed)(ARG1, "cachestat", tid, False))
+        SET_STATUS_Failure( VKI_EBADF );
+    const struct vki_cachestat_range *cstat_range = (struct vki_cachestat_range *)(Addr)ARG2;
+    PRE_MEM_READ("cachestat(cstat_range)", ARG2, sizeof(*cstat_range) );
+    const struct vki_cachestat *cstat = (struct vki_cachestat *)(Addr)ARG3;
+    PRE_MEM_WRITE("cachestat(cstat)", ARG3, sizeof(*cstat) );
+}
+
+POST(sys_cachestat)
+{
+    vg_assert(SUCCESS);
+    POST_MEM_WRITE(ARG3, sizeof(struct vki_cachestat));
 }
 
 PRE(sys_fchmodat2)
@@ -13462,6 +13524,20 @@ PRE(sys_pkey_free)
   SET_STATUS_Failure( VKI_EINVAL );
 }
 
+PRE(sys_io_pgetevents)
+{
+   PRE_REG_READ5(long, "io_pgetevents",
+                 vki_aio_context_t, ctx_id, long, min_nr, long, nr,
+                 struct io_event *, events,
+                 struct timespec *, timeout);
+   common_pre_io_getevents(tid, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, flags, "io_pgetevents");
+}
+
+POST(sys_io_pgetevents)
+{
+   common_post_sys_io_events(tid, ARG4, status, "io_pgetevents");
+}
+
 PRE(sys_pkey_mprotect)
 {
    PRINT("sys_pkey_mprotect ( %#" FMT_REGWORD "x, %" FMT_REGWORD "u, %"
@@ -13655,17 +13731,20 @@ PRE(sys_execveat)
 
 PRE(sys_close_range)
 {
-   SysRes res = VG_(mk_SysRes_Success)(0);
-   Int beg, end;
-   Int first = ARG1;
-   Int last = ARG2;
+   UInt first = ARG1;
+   UInt last = ARG2;
+
+   vg_assert(VG_(log_output_sink).fd == -1 ||
+             VG_(log_output_sink).fd >= VG_(fd_hard_limit));
+   vg_assert(VG_(xml_output_sink).fd == -1 ||
+             VG_(xml_output_sink).fd >= VG_(fd_hard_limit));
 
    FUSE_COMPATIBLE_MAY_BLOCK();
    PRINT("sys_close_range ( %" FMT_REGWORD "u, %" FMT_REGWORD "u, %"
          FMT_REGWORD "u )", ARG1, ARG2, ARG3);
    PRE_REG_READ3(long, "close_range",
                  unsigned int, first, unsigned int, last,
-                 unsigned int, flags);
+                 int, flags);
 
    if (first > last) {
       SET_STATUS_Failure( VKI_EINVAL );
@@ -13680,29 +13759,28 @@ PRE(sys_close_range)
       return;
    }
 
-   beg = end = first;
-   do {
-      if (end > last
-	  || (end == 2/*stderr*/ && VG_(debugLog_getLevel)() > 0)
-	  || end == VG_(log_output_sink).fd
-	  || end == VG_(xml_output_sink).fd) {
-         /* Split the range if it contains a file descriptor we're not
-          * supposed to close. */
-         if (end - 1 >= beg)
-             res = VG_(do_syscall3)(__NR_close_range, (UWord)beg, (UWord)end - 1, ARG3 );
-         beg = end + 1;
+   if (VG_(debugLog_getLevel)() > 0 &&
+      first <= 2U &&
+      last >= 2U &&
+      first != last) {
+      SysRes res = VG_(mk_SysRes_Success)(0);
+      if (first <= 1U) {
+         res = VG_(do_syscall3)(__NR_close_range, first, 1U, ARG3);
       }
-   } while (end++ <= last);
-
-   /* If it failed along the way, it's presumably the flags being wrong. */
-   SET_STATUS_from_SysRes (res);
+      if (!sr_isError(res) && last >= 3U) {
+         res = VG_(do_syscall3)(__NR_close_range, 3U, last, ARG3);
+      }
+      /* If it failed along the way, it's presumably the flags being wrong. */
+      SET_STATUS_from_SysRes (res);
+   } else {
+      SET_STATUS_from_SysRes(VG_(do_syscall3)(__NR_close_range, first, last, ARG3));
+   }
 }
 
 POST(sys_close_range)
 {
-   Int fd;
-   Int first = ARG1;
-   Int last = ARG2;
+   UInt fd;
+   UInt last = ARG2;
 
    if (!VG_(clo_track_fds)
        || (ARG3 & VKI_CLOSE_RANGE_CLOEXEC) != 0)
@@ -13713,13 +13791,11 @@ POST(sys_close_range)
 
    /* If the close_range range is too wide, we don't want to loop
       through the whole range.  */
-   if (last == ~0U)
-     ML_(record_fd_close_range)(tid, first);
+   if (ARG2 >= VG_(fd_hard_limit))
+     ML_(record_fd_close_range)(tid, ARG1);
    else {
-     for (fd = first; fd <= last; fd++)
-       if ((fd != 2/*stderr*/ || VG_(debugLog_getLevel)() == 0)
-           && fd != VG_(log_output_sink).fd
-           && fd != VG_(xml_output_sink).fd)
+     for (fd = ARG1; fd <= last; fd++)
+       if ((fd != 2/*stderr*/ || VG_(debugLog_getLevel)() == 0))
          ML_(record_fd_close)(tid, fd);
    }
 }
@@ -14016,6 +14092,26 @@ POST(sys_fspick)
    } else {
       if (VG_(clo_track_fds))
          ML_(record_fd_open_with_given_name)(tid, RES, (HChar*)(Addr)ARG2);
+   }
+}
+
+/* int syscall(SYS_userfaultfd, int flags); */
+
+PRE(sys_userfaultfd)
+{
+   PRINT("sys_userfaultfd ( %ld )", SARG1);
+   PRE_REG_READ1(long, "userfaultfd", int, size);
+}
+
+POST(sys_userfaultfd)
+{
+   vg_assert(SUCCESS);
+   if (!ML_(fd_allowed)(RES, "userfaultfd", tid, True)) {
+      VG_(close)(RES);
+      SET_STATUS_Failure( VKI_EMFILE );
+   } else {
+      if (VG_(clo_track_fds))
+         ML_(record_fd_open_nameless)(tid, RES);
    }
 }
 

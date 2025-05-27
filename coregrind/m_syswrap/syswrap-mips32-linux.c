@@ -1124,6 +1124,7 @@ static SyscallTableEntry syscall_main_table[] = {
    //..
    LINXY(__NR_statx,                   sys_statx),                   // 366
    GENX_(__NR_rseq,                    sys_ni_syscall),              // 367
+   LINX_(__NR_io_pgetevents,           sys_io_pgetevents),           // 368
 
    LINX_(__NR_semget,                  sys_semget),                  // 393
    LINXY(__NR_semctl,                  sys_semctl),                  // 394
@@ -1179,6 +1180,7 @@ static SyscallTableEntry syscall_main_table[] = {
    LINX_(__NR_landlock_add_rule,       sys_landlock_add_rule),       // 445
    LINX_(__NR_landlock_restrict_self,  sys_landlock_restrict_self),  // 446
 
+   LINXY(__NR_cachestat,               sys_cachestat),               // 451
    LINX_(__NR_fchmodat2,               sys_fchmodat2),               // 452
 };
 

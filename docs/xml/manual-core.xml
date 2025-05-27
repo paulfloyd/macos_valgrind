@@ -901,6 +901,19 @@ in most cases.  We group the available options by rough categories.</para>
     </listitem>
   </varlistentry>
 
+  <varlistentry id="opt.modify-fds" xreflabel="--modify-fds">
+    <term>
+      <option><![CDATA[--modify-fds=<no|yes|high> [default: no] ]]></option>
+    </term>
+    <listitem>
+      <para>When enabled, when the program opens a new file descriptor,
+      the highest available file descriptor is returned instead of the
+      lowest one. Use <option>yes</option> to restrict the feature from
+      the 0/1/2 file descriptors as they're often used for stdout/stderr
+      redirection.</para>
+    </listitem>
+  </varlistentry>
+
   <varlistentry id="opt.time-stamp" xreflabel="--time-stamp">
     <term>
       <option><![CDATA[--time-stamp=<yes|no> [default: no] ]]></option>

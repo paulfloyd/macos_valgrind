@@ -1025,6 +1025,7 @@ static SyscallTableEntry syscall_table[] = {
 
    LINX_ (__NR_execveat,         sys_execveat),         // 362
 
+   LINXY(__NR_userfaultfd,       sys_userfaultfd),      // 364
    GENX_(__NR_mlock2,            sys_mlock2),           // 378
    LINX_(__NR_copy_file_range,   sys_copy_file_range),  // 379
    LINX_(__NR_preadv2,           sys_preadv2),          // 380
@@ -1078,6 +1079,7 @@ static SyscallTableEntry syscall_table[] = {
    LINX_(__NR_landlock_add_rule,       sys_landlock_add_rule),       // 445
    LINX_(__NR_landlock_restrict_self,  sys_landlock_restrict_self),  // 446
 
+   LINXY(__NR_cachestat,         sys_cachestat),         // 451
    LINX_ (__NR_fchmodat2,        sys_fchmodat2),         // 452
 };
 

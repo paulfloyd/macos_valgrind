@@ -115,6 +115,7 @@ static void usage_NORETURN ( int need_help )
 "           startup exit abexit valgrindabexit all none\n"
 "    --track-fds=no|yes|all    track open file descriptors? [no]\n"
 "                              all includes reporting inherited file descriptors\n"
+"    --modify-fds=no|yes|high  modify newly open file descriptors? [no]\n"
 "    --time-stamp=no|yes       add timestamps to log messages? [no]\n"
 "    --log-fd=<number>         log messages to file descriptor [2=stderr]\n"
 "    --log-file=<file>         log messages to <file>\n"
@@ -645,6 +646,17 @@ static void process_option (Clo_Mode mode,
       else
          VG_(fmsg_bad_option)(arg,
             "Bad argument, should be 'yes', 'all' or 'no'\n");
+   }
+   else if VG_STR_CLO(arg, "--modify-fds",         tmp_str) {
+      if (VG_(strcmp)(tmp_str, "high") == 0)
+         VG_(clo_modify_fds) = VG_MODIFY_FD_HIGH;
+      else if (VG_(strcmp)(tmp_str, "yes") == 0)
+        VG_(clo_modify_fds) = VG_MODIFY_FD_YES;
+      else if (VG_(strcmp)(tmp_str, "no") == 0)
+         VG_(clo_modify_fds) = VG_MODIFY_FD_NO;
+      else
+         VG_(fmsg_bad_option)(arg,
+            "Bad argument, should be 'high', 'yes', or 'no'\n");
    }
    else if VG_BOOL_CLOM(cloPD, arg, "--trace-children",   VG_(clo_trace_children)) {}
    else if VG_BOOL_CLOM(cloPD, arg, "--child-silent-after-fork",
@@ -2290,9 +2302,7 @@ void shutdown_actions_NORETURN( ThreadId tid,
    // affects what order the messages come.
    //--------------------------------------------------------------
    // First thing in the post-amble is a blank line.
-   if (VG_(clo_xml))
-      VG_(printf_xml)("\n");
-   else if (VG_(clo_verbosity) > 0)
+   if (VG_(clo_verbosity) > 0 && !VG_(clo_xml))
       VG_(message)(Vg_UserMsg, "\n");
 
    if (VG_(clo_xml)) {
@@ -2334,9 +2344,7 @@ void shutdown_actions_NORETURN( ThreadId tid,
    }
 
    if (VG_(clo_xml)) {
-      VG_(printf_xml)("\n");
       VG_(printf_xml)("</valgrindoutput>\n");
-      VG_(printf_xml)("\n");
    }
 
    VG_(sanity_check_general)( True /*include expensive checks*/ );
@@ -3527,12 +3535,12 @@ void *memcpy(void *dest, const void *src, size_t n);
 void *memcpy(void *dest, const void *src, size_t n) {
    return VG_(memcpy)(dest, src, n);
 }
-void* memmove(void *dest, const void *src, SizeT n);
-void* memmove(void *dest, const void *src, SizeT n) {
+void* memmove(void *dest, const void *src, size_t n);
+void* memmove(void *dest, const void *src, size_t n) {
    return VG_(memmove)(dest,src,n);
 }
-void* memset(void *s, int c, SizeT n);
-void* memset(void *s, int c, SizeT n) {
+void* memset(void *s, int c, size_t n);
+void* memset(void *s, int c, size_t n) {
   return VG_(memset)(s,c,n);
 }
 

@@ -1606,6 +1606,7 @@ static SyscallTableEntry syscall_table[] = {
    LINX_(__NR_shutdown,          sys_shutdown),         // 373
 
    LINX_(__NR_membarrier,        sys_membarrier),       // 375
+   LINXY(__NR_userfaultfd,       sys_userfaultfd),      // 374
    GENX_(__NR_mlock2,            sys_mlock2),           // 376
    LINX_(__NR_copy_file_range,   sys_copy_file_range),  // 377
    LINXY(__NR_preadv2,           sys_preadv2),          // 378
@@ -1619,7 +1620,13 @@ static SyscallTableEntry syscall_table[] = {
    /* Explicitly not supported on i386 yet. */
    GENX_(__NR_arch_prctl,        sys_ni_syscall),       // 384
 
+   LINX_(__NR_io_pgetevents,     sys_io_pgetevents),    // 385
    GENX_(__NR_rseq,              sys_ni_syscall),       // 386
+
+   LINX_(__NR_shmget,            sys_shmget),           // 395
+   LINX_(__NR_shmctl,            sys_shmctl),           // 396
+   LINX_(__NR_shmat,             sys_shmat),            // 397
+   LINX_(__NR_shmdt,             sys_shmdt),            // 398
 
    LINXY(__NR_clock_gettime64,   sys_clock_gettime64),  // 403
    LINX_(__NR_clock_settime64,   sys_clock_settime64),  // 404
@@ -1667,6 +1674,7 @@ static SyscallTableEntry syscall_table[] = {
 
    LINXY(__NR_memfd_secret,      sys_memfd_secret),      // 447
 
+   LINXY(__NR_cachestat,         sys_cachestat),         // 451
    LINX_(__NR_fchmodat2,         sys_fchmodat2),         // 452
 };
 

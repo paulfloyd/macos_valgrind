@@ -856,6 +856,7 @@ static SyscallTableEntry syscall_table[] = {
 //   LIN__(__NR_kexec_file_load,   sys_ni_syscall),      // 320
    LINXY(__NR_bpf,               sys_bpf),               // 321
    LINX_(__NR_execveat,          sys_execveat),          // 322
+   LINXY(__NR_userfaultfd,       sys_userfaultfd),       // 323
 
    GENX_(__NR_mlock2,            sys_mlock2),            // 325
 
@@ -873,6 +874,8 @@ static SyscallTableEntry syscall_table[] = {
    LINXY(__NR_pkey_mprotect,     sys_pkey_mprotect),     // 329
    LINX_(__NR_pkey_alloc,        sys_pkey_alloc),        // 330
    LINX_(__NR_pkey_free,         sys_pkey_free),         // 331
+
+   LINX_(__NR_io_pgetevents,     sys_io_pgetevents),     // 333
 
    LINXY(__NR_io_uring_setup,    sys_io_uring_setup),    // 425
    LINXY(__NR_io_uring_enter,    sys_io_uring_enter),    // 426
@@ -899,6 +902,7 @@ static SyscallTableEntry syscall_table[] = {
 
    LINXY(__NR_memfd_secret,      sys_memfd_secret),      // 447
 
+   LINXY(__NR_cachestat,         sys_cachestat),         // 451
    LINX_(__NR_fchmodat2,         sys_fchmodat2),         // 452
 };
 

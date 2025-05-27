@@ -724,11 +724,11 @@ int main(void)
    /* SYS_freebsd11_lstat         190 */
    GO(SYS_freebsd11_lstat, "2s 2m");
    SY(SYS_freebsd11_lstat, x0, x0); FAIL;
- #else
+#else
    /* SYS_lstat         190 */
    GO(SYS_lstat, "2s 2m");
    SY(SYS_lstat, x0, x0); FAIL;
- #endif
+#endif
 
    /* SYS_pathconf                191 */
    GO(SYS_pathconf, "2s 1m");
@@ -2164,7 +2164,7 @@ int main(void)
 
    // __FreeBSD_version 1201522
    // __FreeBSD_version 1300045
-      /* SYS___sysctlbyname       570 */
+   /* SYS___sysctlbyname       570 */
    GO(SYS___sysctlbyname, "(getoldlen) 3s 2m");
    SY(SYS___sysctlbyname, x0, x0+1, NULL, x0+1, NULL, x0); FAIL;
 
@@ -2447,6 +2447,36 @@ int main(void)
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
    FAKE_SY("Syscall param getrlimitusage(res) points to unaddressable byte(s)\n");
+   FAKE_SY("   ...\n");
+   FAKE_SY(" Address 0x........ is not stack'd, malloc'd or (recently) free'd\n");
+   FAKE_SY("\n");
+#endif
+
+#if defined(SYS_fchroot)
+   GO(SYS_fchroot, "1s, 0m");
+   SY(SYS_fchroot, x0+1000);
+#else
+   FAKE_GO("590:             SYS_fchroot 1s, 0m");
+   FAKE_SY("Syscall param fchroot(fd) contains uninitialised byte(s)\n");
+   FAKE_SY("   ...\n");
+   FAKE_SY("\n");
+#endif
+
+#if defined(SYS_setcred)
+   GO(SYS_setcred, "3s, 1m");
+   SY(SYS_setcred, x0+100, x0+3, x0+50);
+#else
+   FAKE_GO("591:             SYS_setcred 3s, 1m");
+   FAKE_SY("Syscall param setcred(flags) contains uninitialised byte(s)\n");
+   FAKE_SY("   ...\n");
+   FAKE_SY("\n");
+   FAKE_SY("Syscall param setcred(wcred) contains uninitialised byte(s)\n");
+   FAKE_SY("   ...\n");
+   FAKE_SY("\n");
+   FAKE_SY("Syscall param setcred(size) contains uninitialised byte(s)\n");
+   FAKE_SY("   ...\n");
+   FAKE_SY("\n");
+   FAKE_SY("Syscall param setcred(wcred) points to unaddressable byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY(" Address 0x........ is not stack'd, malloc'd or (recently) free'd\n");
    FAKE_SY("\n");

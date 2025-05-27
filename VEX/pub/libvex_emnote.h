@@ -89,9 +89,6 @@ typedef
          facility is not available on this host */
       EmWarn_S390X_fpext_rounding,
 
-      /* insn (e.g. srnmb) specifies an invalid rounding mode */
-      EmWarn_S390X_invalid_rounding,
-
       /* stfle insn is not supported on this host */
       EmFail_S390X_stfle,
 
@@ -121,12 +118,44 @@ typedef
       /* some insn needs vector facility which is not available on this host */
       EmFail_S390X_vx,
 
-      /* ppno insn is not supported on this host */
-      EmFail_S390X_ppno,
+      /* prno insn is not supported on this host */
+      EmFail_S390X_prno,
 
-      /* insn needs vector-enhancements facility which is not available on this
-         host */
+      /* insn needs vector-enhancements facility 1 which is not available on
+         this host */
       EmFail_S390X_vxe,
+
+      /* insn needs deflate-conversion facility which is not available on
+         this host */
+      EmFail_S390X_dflt,
+
+      /* insn needs neural-network-processing-assist facility which is not
+         available on this host */
+      EmFail_S390X_nnpa,
+
+      /* insn needs vector-enhancements facility 2 which is not available on
+         this host */
+      EmFail_S390X_vxe2,
+
+      /* insn needs vector-packed-decimal facility which is not available on
+         this host */
+      EmFail_S390X_vxd,
+
+      /* insn needs message-security assist which is not available on
+         this host */
+      EmFail_S390X_msa,
+
+      /* insn needs message-security-assist extension 4 which is not available
+         on this host */
+      EmFail_S390X_msa4,
+
+      /* insn needs message-security-assist extension 8 which is not available
+         on this host */
+      EmFail_S390X_msa8,
+
+      /* insn needs message-security-assist extension 9 which is not available
+         on this host */
+      EmFail_S390X_msa9,
 
       EmNote_NUMBER
    }

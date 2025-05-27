@@ -49,6 +49,7 @@ DECL_TEMPLATE(linux, sys_preadv);
 DECL_TEMPLATE(linux, sys_preadv2);
 DECL_TEMPLATE(linux, sys_pwritev);
 DECL_TEMPLATE(linux, sys_pwritev2);
+DECL_TEMPLATE(linux, sys_io_pgetevents);
 DECL_TEMPLATE(linux, sys_sendmmsg);
 DECL_TEMPLATE(linux, sys_recvmmsg);
 DECL_TEMPLATE(linux, sys_dup3);
@@ -58,6 +59,7 @@ DECL_TEMPLATE(linux, sys_tee);
 DECL_TEMPLATE(linux, sys_vmsplice);
 DECL_TEMPLATE(linux, sys_readahead);
 DECL_TEMPLATE(linux, sys_move_pages);
+DECL_TEMPLATE(linux, sys_cachestat);
 
 // clone is similar enough between linux variants to have a generic
 // version, but which will call an extern defined in syswrap-<platform>-linux.c
@@ -308,6 +310,9 @@ DECL_TEMPLATE(linux, sys_execveat);
 
 // Linux-specific (new in Linux 4.11)
 DECL_TEMPLATE(linux, sys_statx);
+
+// Linux-specific (new in Linux 4.3)
+DECL_TEMPLATE(linux, sys_userfaultfd);
 
 // Linux-specific memory protection key syscalls (since Linux 4.9)
 DECL_TEMPLATE(linux, sys_pkey_alloc);

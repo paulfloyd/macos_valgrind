@@ -545,6 +545,7 @@ static SyscallTableEntry syscall_main_table[] = {
    LINXY(__NR_perf_event_open, sys_perf_event_open),               /* 241 */
    LINXY(__NR_accept4, sys_accept4),                               /* 242 */
    LINXY(__NR_recvmmsg, sys_recvmmsg),                             /* 243 */
+   GENX_(__NR_riscv_hwprobe, sys_ni_syscall),                      /* 258 */
    PLAX_(__NR_riscv_flush_icache, sys_riscv_flush_icache),         /* 259 */
    GENXY(__NR_wait4, sys_wait4),                                   /* 260 */
    LINXY(__NR_prlimit64, sys_prlimit64),                           /* 261 */
@@ -567,12 +568,14 @@ static SyscallTableEntry syscall_main_table[] = {
    LINXY(__NR_memfd_create, sys_memfd_create),                     /* 279 */
    LINXY(__NR_bpf, sys_bpf),                                       /* 280 */
    LINX_(__NR_execveat, sys_execveat),                             /* 281 */
+   LINXY(__NR_userfaultfd, sys_userfaultfd),                       /* 282 */
    LINX_(__NR_membarrier, sys_membarrier),                         /* 283 */
    GENX_(__NR_mlock2, sys_mlock2),                                 /* 284 */
    LINX_(__NR_copy_file_range, sys_copy_file_range),               /* 285 */
    LINXY(__NR_preadv2, sys_preadv2),                               /* 286 */
    LINX_(__NR_pwritev2, sys_pwritev2),                             /* 287 */
    LINXY(__NR_statx, sys_statx),                                   /* 291 */
+   LINX_(__NR_io_pgetevents, sys_io_pgetevents),                   /* 292 */
    GENX_(__NR_rseq, sys_ni_syscall),                               /* 293 */
    LINXY(__NR_io_uring_setup, sys_io_uring_setup),                 /* 425 */
    LINXY(__NR_io_uring_enter, sys_io_uring_enter),                 /* 426 */
@@ -594,6 +597,7 @@ static SyscallTableEntry syscall_main_table[] = {
    LINX_(__NR_landlock_add_rule, sys_landlock_add_rule),           /* 445 */
    LINX_(__NR_landlock_restrict_self, sys_landlock_restrict_self), /* 446 */
    LINXY(__NR_memfd_secret, sys_memfd_secret),                     /* 447 */
+   LINXY(__NR_cachestat, sys_cachestat),                           /* 451 */
    LINX_(__NR_fchmodat2, sys_fchmodat2),                           /* 452 */
 };
 
