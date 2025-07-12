@@ -1446,6 +1446,7 @@ configure~
 /memcheck/tests/freebsd/getrlimitusage
 /memcheck/tests/freebsd/inlinfo
 /memcheck/tests/freebsd/inlinfo_nested.so
+/memcheck/tests/freebsd/kenv
 /memcheck/tests/freebsd/kqueue
 /memcheck/tests/freebsd/kqueuex
 /memcheck/tests/freebsd/linkat
