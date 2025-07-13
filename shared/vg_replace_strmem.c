@@ -2543,9 +2543,9 @@ static inline void my_exit ( int x )
 
  /*---------------------- wcpncpy ----------------------*/
 
-        // This is a wchar_t equivalent to strncpy.  We don't
-        // have wchar_t available here, but in the GNU C Library
-        // wchar_t is always 32 bits wide.
+ // This is a wchar_t equivalent to strncpy.  We don't
+ // have wchar_t available here, but in the GNU C Library
+ // wchar_t is always 32 bits wide.
 
 #define WCPNCPY(soname, fnname) \
  Int* VG_REPLACE_FUNCTION_EZU(20500,soname,fnname) \
@@ -2577,7 +2577,7 @@ static inline void my_exit ( int x )
          *dst++ = 0; \
      } \
      \
- return dst_orig + (src - src_orig); \
+     return dst_orig + (src - src_orig); \
   }
 
 #if defined(VGO_linux) || defined(VGO_freebsd) || defined(VGO_solaris)
