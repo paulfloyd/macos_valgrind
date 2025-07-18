@@ -5233,6 +5233,7 @@ AC_CHECK_FUNCS([     \
         getaddrinfo  \
         klogctl      \
         mallinfo     \
+        mallinfo2    \
         memchr       \
         memfd_create \
         memset       \
