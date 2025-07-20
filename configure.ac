@@ -5289,7 +5289,8 @@ AC_CHECK_FUNCS([     \
         getrlimitusage \
         timer_delete \
         fchroot      \
-        setcred
+        setcred      \
+        exterrctl
         ])
 
 # AC_CHECK_LIB adds any library found to the variable LIBS, and links these
@@ -5351,6 +5352,8 @@ AM_CONDITIONAL([HAVE_FCHROOT],
                [test x$ac_cv_func_fchroot = xyes])
 AM_CONDITIONAL([HAVE_SETCRED],
                [test x$ac_cv_func_setcred = xyes])
+AM_CONDITIONAL([HAVE_EXTERRCTL],
+               [test x$ac_cv_func_exterrctl = xyes])
 
 if test x$VGCONF_PLATFORM_PRI_CAPS = xMIPS32_LINUX \
      -o x$VGCONF_PLATFORM_PRI_CAPS = xMIPS64_LINUX \
