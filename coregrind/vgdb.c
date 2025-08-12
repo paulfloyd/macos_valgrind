@@ -2080,11 +2080,11 @@ void report_pid(int pid, Bool on_stdout)
       }
 
       for (i = 0; i < nr_read; i++)
-            if (cmdline[i] == 0)
-               cmdline[i] = ' ';
+         if (cmdline[i] == 0)
+            cmdline[i] = ' ';
       cmdline[nr_read] = 0;
 
-         fprintf(out, "%s", cmdline);
+      fprintf(out, "%s", cmdline);
       fprintf(out, "\n");
       close(fd);
    }
