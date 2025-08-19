@@ -2591,8 +2591,9 @@ static void panic(const char *str)
  MALLINFO(VG_Z_LIBC_SONAME, mallinfo);
  MALLINFO(SO_SYN_MALLOC,    mallinfo);
 
-#elif defined(VGO_darwin)
- //MALLINFO(VG_Z_LIBC_SONAME, mallinfo);
+#elif defined(VGO_solaris)
+ MALLINFO(VG_Z_LIBC_SONAME, mallinfo);
+ MALLINFO(SO_SYN_MALLOC,    mallinfo);
 
 #endif
 
@@ -2617,9 +2618,6 @@ static void panic(const char *str)
 #if defined(VGO_linux)
  MALLINFO2(VG_Z_LIBC_SONAME, mallinfo2);
  MALLINFO2(SO_SYN_MALLOC,    mallinfo2);
-
-#elif defined(VGO_darwin)
- //MALLINFO2(VG_Z_LIBC_SONAME, mallinfo2);
 
 #endif
 
