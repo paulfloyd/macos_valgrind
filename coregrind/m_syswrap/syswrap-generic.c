@@ -598,7 +598,6 @@ int ML_(get_next_new_fd)(int fd)
    return next_new_fd;
 }
 
-
 Int ML_(get_fd_count)(void)
 {
    return fd_count;
