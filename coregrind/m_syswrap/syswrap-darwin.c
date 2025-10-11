@@ -11346,16 +11346,6 @@ PRE(kernelrpc_mach_port_get_attributes_trap)
 
 #if DARWIN_VERS >= DARWIN_10_15
 
-PRE(mkdirat)
-{
-   *flags |= SfMayBlock;
-   PRINT("sys_mkdirat ( %ld, %#" FMT_REGWORD "x(%s), %ld )",
-         SARG1, ARG2, (HChar*)(Addr)ARG2, SARG3);
-   PRE_REG_READ3(long, "mkdirat",
-                 int, dfd, const char *, pathname, int, mode);
-   PRE_MEM_RASCIIZ( "mkdirat(pathname)", ARG2 );
-}
-
 PRE(task_restartable_ranges_register)
 {
    PRINT("task_restartable_ranges_register(%s, %#lx, %ld)", name_for_port(ARG1), ARG2, SARG3);
@@ -12243,9 +12233,7 @@ const SyscallTableEntry ML_(syscall_table)[] = {
    MACXY(__NR_fstatat64,           fstatat64),          // 470
    MACX_(__NR_unlinkat,            unlinkat),           // 472
    MACX_(__NR_readlinkat,          readlinkat),         // 473
-#if DARWIN_VERS >= DARWIN_10_15
    MACX_(__NR_mkdirat,             mkdirat),            // 475
-#endif
    MACX_(__NR_bsdthread_ctl,       bsdthread_ctl),      // 478
    MACXY(__NR_csrctl,              csrctl),             // 483
    MACX_(__NR_guarded_open_dprotected_np, guarded_open_dprotected_np),  // 484
