@@ -1,8 +1,3 @@
-Syscall param setcred(wcred) points to unaddressable byte(s)
-   at 0x........: setcred (in /...libc...)
-   by 0x........: main (setcred.cpp:19)
- Address 0x........ is not stack'd, malloc'd or (recently) free'd
-
 Syscall param setcred(flags) contains uninitialised byte(s)
    at 0x........: setcred (in /...libc...)
    by 0x........: main (setcred.cpp:23)

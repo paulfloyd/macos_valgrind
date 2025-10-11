@@ -422,7 +422,7 @@ static Addr setup_client_stack(const void*  init_sp,
 
    const HChar *exe_name = VG_(find_executable)(VG_(args_the_exename));
    HChar interp_name[VKI_PATH_MAX];
-   if (try_get_interp(exe_name, interp_name)) {
+   if (VG_(try_get_interp)(exe_name, interp_name, VKI_PATH_MAX)) {
       exe_name = interp_name;
    }
    HChar resolved_name[VKI_PATH_MAX];

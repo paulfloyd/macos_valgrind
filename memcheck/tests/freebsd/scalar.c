@@ -2179,7 +2179,7 @@ int main(void)
 
    // __FreeBSD_version 1201522
    // __FreeBSD_version 1300045
-   /* SYS___sysctlbyname       570 */
+   /* SYS___sysctlbyname          570 */
    GO(SYS___sysctlbyname, "(getoldlen) 3s 2m");
    SY(SYS___sysctlbyname, x0, x0+1, NULL, x0+1, NULL, x0); FAIL;
 
@@ -2190,7 +2190,7 @@ int main(void)
    SY(SYS___sysctlbyname, x0, x0+1, NULL, NULL, x0+1, x0+2); FAIL;
 
    // FreeBSD 13 (and any backports)
-   /* SYS_shm_open2                      571 */
+   /* SYS_shm_open2               571 */
 #if defined(SYS_shm_open2)
    GO(SYS_shm_open2, " 5s 2m");
    SY(SYS_shm_open2, x0+0xf00c, x0+1, x0+2, x0+3, x0+4); FAIL;
@@ -2245,7 +2245,7 @@ int main(void)
    FAKE_SY("\n");
 #endif
 
-   /* SYS___realpathat                   574 */
+   /* SYS___realpathat            574 */
 #if defined(SYS___realpathat)
    GO(SYS___realpathat, " 5s 2m");
    SY(SYS___realpathat, x0+0xffff, x0, x0, x0+100, x0+2); FAIL;
@@ -2276,14 +2276,14 @@ int main(void)
    FAKE_SY("\n");
 #endif
 
-   /* SYS_close_range                    575 */
+   /* SYS_close_range             575 */
 #if defined(SYS_close_range)
    GO(SYS_close_range, "3s 0m");
    SY(SYS_close_range, x0+5, x0+10, x0+12345); FAIL;
 #else
 #endif
 
-   /* SYS___specialfd                    577 */
+   /* SYS___specialfd             577 */
 #if defined(SYS___specialfd)
    GO(SYS___specialfd, "3s 1m");
    SY(SYS___specialfd, x0+0xf000, x0+1, x0+10); FAIL;
@@ -2304,7 +2304,7 @@ int main(void)
    FAKE_SY("\n");
 #endif
 
-   /* SYS_aio_writev                     578 */
+   /* SYS_aio_writev              578 */
 #if defined(SYS_aio_writev)
    GO(SYS_aio_writev, "1s 1m");
    SY(SYS_aio_writev, x0+1); FAIL;
@@ -2319,7 +2319,7 @@ int main(void)
    FAKE_SY("\n");
 #endif
 
-   /* SYS_aio_readv                      579 */
+   /* SYS_aio_readv               579 */
 #if defined(SYS_aio_readv)
    GO(SYS_aio_readv, "1s 1m");
    SY(SYS_aio_readv, x0+1); FAIL;
@@ -2335,7 +2335,7 @@ int main(void)
 #endif
 
     // FreeBSD 15 (and any backports)
-   /* SYS_kqueuex                        583 */
+   /* SYS_kqueuex                 583 */
 #if defined(SYS_kqueuex)
    GO(SYS_kqueuex, " 1s 0m");
    SY(SYS_kqueuex, x0+123); FAIL;
@@ -2346,7 +2346,7 @@ int main(void)
    FAKE_SY("\n");
 #endif
 
-   /* SYS_membarrier                     584 */
+   /* SYS_membarrier              584 */
 #if defined(SYS_membarrier)
    GO(SYS_membarrier, " 3s 0m");
    SY(SYS_membarrier, x0+123, x0+456, x0+789); FAIL;
@@ -2363,7 +2363,7 @@ int main(void)
    FAKE_SY("\n");
 #endif
 
-   /* SYS_timerfd_create                 585 */
+   /* SYS_timerfd_create          585 */
 #if defined(SYS_timerfd_create)
    GO(SYS_timerfd_create, " 2s 0m");
    SY(SYS_timerfd_create, x0+123, x0+23456); FAIL;
@@ -2377,7 +2377,7 @@ int main(void)
    FAKE_SY("\n");
 #endif
 
-   /* SYS_timerfd_gettime                586 */
+   /* SYS_timerfd_gettime         586 */
 #if defined(SYS_timerfd_gettime)
    GO(SYS_timerfd_gettime, " 2s 1m");
    SY(SYS_timerfd_gettime, x0+100, x0); FAIL;
@@ -2395,7 +2395,7 @@ int main(void)
    FAKE_SY("\n");
 #endif
 
-   /* SYS_timerfd_settime                587 */
+   /* SYS_timerfd_settime         587 */
 #if defined(SYS_timerfd_settime)
    GO(SYS_timerfd_settime, "4s 2m");
    SY(SYS_timerfd_settime, x0+321, x0, x0+10, x0+5); FAIL;
@@ -2423,7 +2423,7 @@ int main(void)
    FAKE_SY("\n");
 #endif
 
-   /* SYS_kcmp                           588 */
+   /* SYS_kcmp                    588 */
 #if defined(SYS_kcmp)
    GO(SYS_kcmp, "5s 0m");
    SY(SYS_kcmp, x0+1, x0+2, x0+3, x0+4, x0+5);
@@ -2446,7 +2446,7 @@ int main(void)
    FAKE_SY("\n");
 #endif
 
-   /* SYS_getrlimitusage                 589 */
+   /* SYS_getrlimitusage          589 */
 #if defined(SYS_getrlimitusage)
    GO(SYS_getrlimitusage, "3s, 1m");
    SY(SYS_getrlimitusage, x0+3, x0, x0+2);
