@@ -348,13 +348,23 @@ int main(void)
    GO(SYS_mincore, "3s 1m");
    SY(SYS_mincore, x0, x0+40960, x0); FAIL;
 
-   /* SYS_getgroups               79 */
+   /* SYS_freeebsd14_getgroups    79 */
+#if defined(SYS_freebsd14_getgroups)
+   GO(SYS_freebsd14_getgroups, "2s 1m");
+   SY(SYS_freebsd14_getgroups, x0+1, x0+1); FAIL;
+#else
    GO(SYS_getgroups, "2s 1m");
    SY(SYS_getgroups, x0+1, x0+1); FAIL;
+#endif
 
-   /* SYS_setgroups               80 */
+   /* SYS_freebsd14_setgroups     80 */
+#if defined(SYS_freebsd14_getgroups)
+   GO(SYS_freebsd14_setgroups, "2s 1m");
+   SY(SYS_freebsd14_setgroups, x0+1, x0+1); FAIL;
+#else
    GO(SYS_setgroups, "2s 1m");
    SY(SYS_setgroups, x0+1, x0+1); FAIL;
+#endif
 
    /* SYS_getpgrp                 81 */
    GO(SYS_getpgrp, "0s 0m");
@@ -822,30 +832,30 @@ int main(void)
 #endif
 #else
    FAKE_GO("220:   SYS_freebsd7___semctl (IPC_STAT) 4s 1m");
-   FAKE_SY("Syscall param semctl(semid) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7___semctl(semid) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
-   FAKE_SY("Syscall param semctl(semnum) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7___semctl(semnum) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
-   FAKE_SY("Syscall param semctl(cmd) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7___semctl(cmd) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
-   FAKE_SY("Syscall param semctl(arg) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7___semctl(arg) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
-   FAKE_SY("Syscall param sys_freebsd7___semctl(arg) points to unaddressable byte(s)\n");
+   FAKE_SY("Syscall param freebsd7___semctl(arg) points to unaddressable byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY(" Address 0x........ is not stack'd, malloc'd or (recently) free'd\n");
    FAKE_SY("\n");
    FAKE_GO("220:   SYS_freebsd7___semctl (bogus cmd) 3s 0m");
-   FAKE_SY("Syscall param semctl(semid) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7___semctl(semid) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
-   FAKE_SY("Syscall param semctl(semnum) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7___semctl(semnum) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
-   FAKE_SY("Syscall param semctl(cmd) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7___semctl(cmd) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
 #endif
@@ -871,31 +881,31 @@ int main(void)
 #endif
 #else
    FAKE_GO("224:     SYS_freebsd7_msgctl (set) 3s 1m");
-   FAKE_SY("Syscall param msgctl(msqid) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7_msgctl(msqid) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
-   FAKE_SY("Syscall param msgctl(cmd) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7_msgctl(cmd) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
-   FAKE_SY("Syscall param msgctl(buf) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7_msgctl(buf) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
-   FAKE_SY("Syscall param msgctl(IPC_SET, buf) points to unaddressable byte(s)\n");
+   FAKE_SY("Syscall param freebsd7_msgctl(IPC_SET, buf) points to unaddressable byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY(" Address 0x........ is not stack'd, malloc'd or (recently) free'd\n");
    FAKE_SY("\n");
 
    FAKE_GO("224:     SYS_freebsd7_msgctl (stat) 3s 1m");
-   FAKE_SY("Syscall param msgctl(msqid) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7_msgctl(msqid) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
-   FAKE_SY("Syscall param msgctl(cmd) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7_msgctl(cmd) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
-   FAKE_SY("Syscall param msgctl(buf) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7_msgctl(buf) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
-   FAKE_SY("Syscall param msgctl(IPC_STAT, buf) points to unaddressable byte(s)\n");
+   FAKE_SY("Syscall param freebsd7_msgctl(IPC_STAT, buf) points to unaddressable byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY(" Address 0x........ is not stack'd, malloc'd or (recently) free'd\n");
    FAKE_SY("\n");
@@ -928,24 +938,24 @@ int main(void)
 #endif
 #else
    FAKE_GO("229:     SYS_freebsd7_shmctl 3s 0m");
-   FAKE_SY("Syscall param shmctl(shmid) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7_shmctl(shmid) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
-   FAKE_SY("Syscall param shmctl(cmd) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7_shmctl(cmd) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
-   FAKE_SY("Syscall param shmctl(buf) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7_shmctl(buf) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
 
    FAKE_GO("229:     SYS_freebsd7_shmctl (bogus cmd) 3s 0m");
-   FAKE_SY("Syscall param shmctl(shmid) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7_shmctl(shmid) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
-   FAKE_SY("Syscall param shmctl(cmd) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7_shmctl(cmd) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
-   FAKE_SY("Syscall param shmctl(buf) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param freebsd7_shmctl(buf) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
 
@@ -1989,13 +1999,13 @@ int main(void)
     SY(SYS_posix_fallocate, x0+99999, x0+10, x0+20); SUCC;
 #else
     GO(SYS_posix_fallocate, "5s 0m");
-    SY(SYS_posix_fallocate, x0+99999, x0, x0+10, x0, x0+20); SUCC;
+    SY(SYS_posix_fallocate, x0+9999, x0, x0+10, x0, x0+20); SUCC;
 #endif
     assert(res == EBADF);
 
     /* SYS_posix_fadvise          531 */
     GO(SYS_posix_fadvise, "4s 0m");
-    SY(SYS_posix_fadvise, x0+99999, x0+10, x0+20, x0); SUCC;
+    SY(SYS_posix_fadvise, x0+9999, x0+10, x0+20, x0); SUCC;
     assert(res == EBADF);
 
     /* SYS_wait6                  532 */
@@ -2457,6 +2467,7 @@ int main(void)
    FAKE_SY("\n");
 #endif
 
+   /* SYS_fchroot                 590 */
 #if defined(SYS_fchroot)
    GO(SYS_fchroot, "1s, 0m");
    SY(SYS_fchroot, x0+1000);
@@ -2467,6 +2478,7 @@ int main(void)
    FAKE_SY("\n");
 #endif
 
+   /* SYS_setcred                 591 */
 #if defined(SYS_setcred)
    GO(SYS_setcred, "3s, 1m");
    SY(SYS_setcred, x0+100, x0+3, x0+50);
@@ -2487,6 +2499,7 @@ int main(void)
    FAKE_SY("\n");
 #endif
 
+   /* SYS_wxterrctl               592 */
 #if defined(SYS_exterrctl)
    GO(SYS_exterrctl, "3s, 1m");
    SY(SYS_exterrctl, x0, x0+1, x0+1);
@@ -2507,11 +2520,12 @@ int main(void)
    FAKE_SY("\n");
 #endif
 
+   /* SYS_inotify_add_watch_at    593 */
 #if defined(SYS_inotify_add_watch_at)
-   GO(SYS_inotify_add_watch_at, "3s, 1m");
-   SY(SYS_inotify_add_watch_at, x0, x0+1, x0+1);
+   GO(SYS_inotify_add_watch_at, "4s, 1m");
+   SY(SYS_inotify_add_watch_at, x0+99, x0+100, x0+1, x0+999999);
 #else
-   FAKE_GO("593:SYS_inotify_add_watch_at 3s, 1m");
+   FAKE_GO("593:SYS_inotify_add_watch_at 4s, 1m");
    FAKE_SY("Syscall param inotify_add_watch_at(fd) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
@@ -2521,24 +2535,69 @@ int main(void)
    FAKE_SY("Syscall param inotify_add_watch_at(path) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
+   FAKE_SY("Syscall param inotify_add_watch_at(mask) contains uninitialised byte(s)\n");
+   FAKE_SY("   ...\n");
+   FAKE_SY("\n");
    FAKE_SY("Syscall param inotify_add_watch_at(path) points to unaddressable byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY(" Address 0x........ is not stack'd, malloc'd or (recently) free'd\n");
    FAKE_SY("\n");
 #endif
 
+   /* SYS_inotify_rm_watch        594 */
 #if defined(SYS_inotify_rm_watch)
    GO(SYS_inotify_rm_watch, "2s, 0m");
    SY(SYS_inotify_rm_watch, x0+1000, x0+1000);
 #else
    FAKE_GO("594:    SYS_inotify_rm_watch 2s, 0m");
-   FAKE_SY("Syscall param sys_inotify_rm_watch(fd) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param inotify_rm_watch(fd) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
-   FAKE_SY("Syscall param sys_inotify_rm_watch(wd) contains uninitialised byte(s)\n");
+   FAKE_SY("Syscall param inotify_rm_watch(wd) contains uninitialised byte(s)\n");
    FAKE_SY("   ...\n");
    FAKE_SY("\n");
 #endif
+
+   /* SYS_getgroups               595 */
+#if defined(SYS_freebsd14_getgroups)
+   GO(SYS_getgroups, "2s 1m");
+   SY(SYS_getgroups, x0+1, x0+1); FAIL;
+#else
+   FAKE_GO("595:           SYS_getgroups 2s 1m");
+   FAKE_SY("Syscall param getgroups(size) contains uninitialised byte(s)\n");
+   FAKE_SY("   ...\n");
+   FAKE_SY("\n");
+   FAKE_SY("Syscall param getgroups(list) contains uninitialised byte(s)\n");
+   FAKE_SY("   ...\n");
+   FAKE_SY("\n");
+   FAKE_SY("Syscall param getgroups(list) points to unaddressable byte(s)\n");
+   FAKE_SY("   ...\n");
+   FAKE_SY(" Address 0x........ is not stack'd, malloc'd or (recently) free'd\n");
+   FAKE_SY("\n");
+#endif
+
+   /* SYS_setgroups               596 */
+#if defined(SYS_freebsd14_getgroups)
+   GO(SYS_setgroups, "2s 1m");
+   SY(SYS_setgroups, x0+1, x0+1); FAIL;
+#else
+   FAKE_GO("596:           SYS_setgroups 2s 1m");
+   FAKE_SY("Syscall param setgroups(size) contains uninitialised byte(s)\n");
+   FAKE_SY("   ...\n");
+   FAKE_SY("\n");
+   FAKE_SY("Syscall param setgroups(list) contains uninitialised byte(s)\n");
+   FAKE_SY("   ...\n");
+   FAKE_SY("\n");
+   FAKE_SY("Syscall param setgroups(list) points to unaddressable byte(s)\n");
+   FAKE_SY("   ...\n");
+   FAKE_SY(" Address 0x........ is not stack'd, malloc'd or (recently) free'd\n");
+   FAKE_SY("\n");
+#endif
+
+   // no such syscall...
+   GO(9999, "1e");
+   SY(9999); FAIL;
+
 
    /* SYS_exit                    1 */
    GO(SYS_exit, "1s 0m");

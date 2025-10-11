@@ -337,52 +337,6 @@ static const struct auxv *find_auxv(const UWord* sp)
 /*
  * @todo PJF Make this multi-platform
  */
-static Bool try_get_interp(const HChar* args_exe, HChar* interp_out)
-{
-   HChar  hdr[4096];
-   Int    len = sizeof hdr;
-   SysRes res;
-   Int fd;
-   HChar* end;
-   HChar* cp;
-   HChar* interp;
-
-   res = VG_(open)(args_exe, VKI_O_RDONLY, 0);
-   if (sr_isError(res)) {
-      return False;
-   } else {
-      fd = sr_Res(res);
-   }
-
-   res = VG_(pread)(fd, hdr, len, 0);
-
-   if (sr_isError(res)) {
-      VG_(close)(fd);
-      return False;
-   } else {
-      len = sr_Res(res);
-   }
-
-   if (0 != VG_(memcmp)(hdr, "#!", 2)) {
-       VG_(close)(fd);
-      return False;
-   }
-
-   end    = hdr + len;
-   interp = hdr + 2;
-   while (interp < end && (*interp == ' ' || *interp == '\t'))
-      interp++;
-
-   for (cp = interp; cp < end && !VG_(isspace)(*cp); cp++)
-      ;
-
-   *cp = '\0';
-
-   VG_(sprintf)(interp_out, "%s", interp);
-
-   VG_(close)(fd);
-   return True;
-}
 
 /* ----------------------------------------------------------------
 
@@ -762,6 +716,7 @@ static Addr setup_client_stack(const void*  init_sp,
 #if defined(VGP_arm64_freebsd)
       // FreeBSD 11+ also have HWCAP and HWCAP2
       // but they aren't used on amd64
+      // FreeBSD 15 adds HWCAP3 and HWCAP4
       case VKI_AT_HWCAP:
 #define ARM64_SUPPORTED_HWCAP (VKI_HWCAP_ATOMICS        \
                                | VKI_HWCAP_AES          \

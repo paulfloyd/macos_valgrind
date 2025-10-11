@@ -158,7 +158,8 @@ typedef
 #define VEX_S390X_MODEL_Z14_ZR1  15
 #define VEX_S390X_MODEL_Z15      16
 #define VEX_S390X_MODEL_Z16      17
-#define VEX_S390X_MODEL_UNKNOWN  18     /* always last in list */
+#define VEX_S390X_MODEL_Z17      18
+#define VEX_S390X_MODEL_UNKNOWN  19     /* always last in list */
 #define VEX_S390X_MODEL_MASK     0x3F
 
 #define VEX_HWCAPS_S390X_LDISP (1<<6)   /* Long-displacement facility */
@@ -241,10 +242,6 @@ typedef
 #define VEX_HWCAPS_ARM64_BF16        (1 << 13)
 #define VEX_HWCAPS_ARM64_FP16        (1 << 14)
 #define VEX_HWCAPS_ARM64_VFP16       (1 << 15)
-#define VEX_HWCAPS_ARM64_PAUTH       (1 << 16)
-#define VEX_HWCAPS_ARM64_LRCPC       (1 << 17)
-#define VEX_HWCAPS_ARM64_DIT         (1 << 18)
-#define VEX_HWCAPS_ARM64_SB          (1 << 19)
 
 /* MIPS baseline capability */
 /* Assigned Company values for bits 23:16 of the PRId Register
@@ -969,7 +966,7 @@ extern void LibVEX_ShowStats ( void );
 
 #define NO_ROUNDING_MODE (~0u)
 
-typedef
+typedef 
    enum {
       IRICB_vbit,
       IRICB_iropt,
@@ -992,10 +989,10 @@ typedef
       UInt  rounding_mode;
       UInt  num_operands; // excluding rounding mode, if any
       /* The following two members describe if this operand has immediate
-       * operands. There are a few restrictions:
-       * (1) An operator can have at most one immediate operand.
+       *  operands. There are a few restrictions:
+       *    (1) An operator can have at most one immediate operand.
        * (2) If there is an immediate operand, it is the right-most operand
-       * An immediate_index of 0 means there is no immediate operand.
+       *  An immediate_index of 0 means there is no immediate operand.
        */
       UInt immediate_type;  // size of immediate Ity_I8, Ity_16
       UInt immediate_index; // operand number: 1, 2
@@ -1005,7 +1002,8 @@ typedef
 typedef
    struct {
       IROp   op;            // the operation to perform
-      HWord  result;        // address of the result
+      HWord  result_fold;   // address of the result (with folding)
+      HWord  result_nofold; // address of the result (without folding)
       HWord  opnd1;         // address of 1st operand
       HWord  opnd2;         // address of 2nd operand
       IRType t_result;      // type of result
